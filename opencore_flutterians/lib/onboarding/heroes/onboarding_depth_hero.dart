@@ -67,9 +67,6 @@ class _OnboardingDepthHeroState extends State<OnboardingDepthHero>
           children: List.generate(_labels.length, (i) {
             final isActive = i == _activeIndex;
             final segmentOpacity = isActive ? _selectionOpacity.value : 1.0;
-            final barColor = isActive
-                ? Color.lerp(c.surfaceRaised, c.accent, _selectionOpacity.value)!
-                : c.surfaceRaised;
 
             return Padding(
               padding: EdgeInsets.only(left: i > 0 ? 8 : 0),
@@ -82,7 +79,7 @@ class _OnboardingDepthHeroState extends State<OnboardingDepthHero>
                       width: 72,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: barColor,
+                        color: isActive ? c.accent : c.surfaceRaised,
                         border: Border.all(
                           color: isActive ? c.accent : c.borderVisible,
                         ),

@@ -22,11 +22,9 @@ class OnboardingQueueHero extends StatefulWidget {
 
 class _OnboardingQueueHeroState extends State<OnboardingQueueHero>
     with SingleTickerProviderStateMixin {
-  static const _stagger = Duration(milliseconds: 60);
-
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: OnboardingTokens.durationPage + _stagger * 2,
+    duration: const Duration(milliseconds: 400),
   );
 
   late final List<Animation<double>> _rowOpacities = List.generate(3, (i) {

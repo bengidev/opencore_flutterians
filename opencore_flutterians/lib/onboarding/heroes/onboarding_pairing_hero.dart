@@ -26,9 +26,22 @@ class _OnboardingPairingHeroState extends State<OnboardingPairingHero>
     vsync: this,
     duration: OnboardingTokens.durationPage,
   );
-  late final Animation<double> _opacity = CurvedAnimation(
+  late final Animation<double> _deviceOpacity = CurvedAnimation(
     parent: _controller,
     curve: OnboardingTokens.easeUi,
+  );
+  late final Animation<double> _lockOpacity = CurvedAnimation(
+    parent: _controller,
+    curve: const Interval(0.4, 1.0, curve: OnboardingTokens.easeUi),
+  );
+  late final Animation<double> _lockScale = Tween<double>(
+    begin: 0.95,
+    end: 1.0,
+  ).animate(
+    CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.4, 1.0, curve: OnboardingTokens.easeUi),
+    ),
   );
 
   @override
@@ -54,26 +67,29 @@ class _OnboardingPairingHeroState extends State<OnboardingPairingHero>
   @override
   Widget build(BuildContext context) {
     final c = OnboardingThemeColors.of(context).colors;
-    return FadeTransition(
-      opacity: _opacity,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _device(c),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Icon(Icons.lock_outline, color: c.accent, size: 20),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        FadeTransition(opacity: _deviceOpacity, child: _device(c)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: FadeTransition(
+            opacity: _lockOpacity,
+            child: ScaleTransition(
+              scale: _lockScale,
+              child: Icon(Icons.lock_outline, color: c.accent, size: 20),
+            ),
           ),
-          _device(c),
-        ],
-      ),
+        ),
+        FadeTransition(opacity: _deviceOpacity, child: _device(c)),
+      ],
     );
   }
 
   Widget _device(OnboardingColorTokens c) {
     return Container(
-      width: 48,
-      height: 56,
+      width: 56,
+      height: 88,
       decoration: BoxDecoration(
         border: Border.all(color: c.borderVisible),
         borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl),
