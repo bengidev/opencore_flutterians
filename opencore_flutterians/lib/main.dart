@@ -41,6 +41,11 @@ class _OpenCoreRootState extends State<_OpenCoreRoot> {
     return FutureBuilder<Widget>(
       future: _rootFuture,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Scaffold(
+            body: Center(child: Text('[ERROR: COULD NOT LOAD]')),
+          );
+        }
         if (!snapshot.hasData) {
           return const Scaffold(
             body: Center(child: Text('[LOADING...]')),
