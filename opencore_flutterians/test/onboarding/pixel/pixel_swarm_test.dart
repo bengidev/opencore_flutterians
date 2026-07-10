@@ -80,7 +80,7 @@ void main() {
     final enter = AnimationController(
       vsync: const TestVSync(),
       duration: const Duration(milliseconds: 400),
-    )..value = 0;
+    )..value = 0.15;
     addTearDown(enter.dispose);
 
     await tester.pumpWidget(
@@ -103,7 +103,6 @@ void main() {
     );
     await tester.pump();
     expect(find.text('ASSEMBLED'), findsOneWidget);
-    // Cloud particles are Text glyphs; assembled label must be visible at t=0 under reduced motion.
-    expect(find.text('ASSEMBLED'), findsOneWidget);
+    expect(find.byType(PixelSwarmCloud), findsNothing);
   });
 }
