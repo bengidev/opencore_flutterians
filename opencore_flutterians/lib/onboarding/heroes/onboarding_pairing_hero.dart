@@ -67,9 +67,10 @@ class _OnboardingPairingHeroState extends State<OnboardingPairingHero>
         colors: c,
         seed: _seed,
         motifs: _motifs,
-        cloudWidth: 270,
-        cloudHeight: 140,
-        particleCount: 140,
+        onReplay: replayHero,
+        cloudWidth: 320,
+        cloudHeight: 156,
+        particleCount: 160,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
