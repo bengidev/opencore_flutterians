@@ -148,6 +148,7 @@ class PixelSwarmCloud extends StatelessWidget {
   Widget build(BuildContext context) {
     final phase = enterT * 3.2;
     final assemble = PixelSwarmMath.assembleProgress(enterT);
+    final roles = _collectRoles();
 
     return SizedBox(
       width: width,
@@ -157,16 +158,29 @@ class PixelSwarmCloud extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           for (var i = 0; i < particleCount; i++)
-            _cloudParticle(i, phase, assemble),
+            _cloudParticle(i, phase, assemble, roles),
         ],
       ),
     );
+  }
+
+  List<PixelCellRole> _collectRoles() {
+    final roles = <PixelCellRole>[];
+    for (final pattern in patterns) {
+      for (final row in pattern.rows) {
+        for (final role in row) {
+          if (role != PixelCellRole.empty) roles.add(role);
+        }
+      }
+    }
+    return roles;
   }
 
   Widget _cloudParticle(
     int i,
     double phase,
     double assemble,
+    List<PixelCellRole> roles,
   ) {
     final anchor = PixelSwarmMath.columnAnchor(
       index: i,
@@ -186,7 +200,7 @@ class PixelSwarmCloud extends StatelessWidget {
       phase: phase,
       amplitude: 7 * (1 - assemble * 0.55),
     );
-    final role = _roleFor(i);
+    final role = _roleFor(i, roles);
     final char = kSwarmGlyphPool[i % kSwarmGlyphPool.length];
     final fontSize = 7.0 + (i % 4);
     final rows = (particleCount / columns).ceil().clamp(1, 999);
@@ -211,15 +225,7 @@ class PixelSwarmCloud extends StatelessWidget {
     );
   }
 
-  PixelCellRole _roleFor(int i) {
-    final roles = <PixelCellRole>[];
-    for (final pattern in patterns) {
-      for (final row in pattern.rows) {
-        for (final role in row) {
-          if (role != PixelCellRole.empty) roles.add(role);
-        }
-      }
-    }
+  PixelCellRole _roleFor(int i, List<PixelCellRole> roles) {
     if (roles.isEmpty) {
       return i.isEven ? PixelCellRole.muted : PixelCellRole.accent;
     }
@@ -254,41 +260,43 @@ class PixelHeroAssembly extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final assembly = AnimatedBuilder(
+      animation: enter,
+      builder: (context, assembled) {
+        final t = enter.value;
+        final reduced = MediaQuery.disableAnimationsOf(context);
+        final cloud = reduced ? 0.0 : PixelSwarmMath.cloudOpacity(t);
+        final gui = reduced ? 1.0 : PixelSwarmMath.guiOpacity(t);
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            if (cloud > 0.03)
+              IgnorePointer(
+                child: Opacity(
+                  opacity: cloud,
+                  child: PixelSwarmCloud(
+                    patterns: motifs,
+                    colors: colors,
+                    enterT: t,
+                    seed: seed,
+                    width: cloudWidth,
+                    height: cloudHeight,
+                    particleCount: particleCount,
+                  ),
+                ),
+              ),
+            if (gui > 0.01) Opacity(opacity: gui, child: assembled),
+          ],
+        );
+      },
+      child: child,
+    );
+    if (onReplay == null) return assembly;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onReplay,
-      child: AnimatedBuilder(
-        animation: enter,
-        builder: (context, assembled) {
-          final t = enter.value;
-          final reduced = MediaQuery.disableAnimationsOf(context);
-          final cloud = reduced ? 0.0 : PixelSwarmMath.cloudOpacity(t);
-          final gui = reduced ? 1.0 : PixelSwarmMath.guiOpacity(t);
-          return Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              if (cloud > 0.03)
-                IgnorePointer(
-                  child: Opacity(
-                    opacity: cloud,
-                    child: PixelSwarmCloud(
-                      patterns: motifs,
-                      colors: colors,
-                      enterT: t,
-                      seed: seed,
-                      width: cloudWidth,
-                      height: cloudHeight,
-                      particleCount: particleCount,
-                    ),
-                  ),
-                ),
-              if (gui > 0.01) Opacity(opacity: gui, child: assembled),
-            ],
-          );
-        },
-        child: child,
-      ),
+      child: assembly,
     );
   }
 }
