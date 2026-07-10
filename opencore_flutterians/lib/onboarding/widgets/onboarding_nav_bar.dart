@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../onboarding_page_model.dart';
 import 'onboarding_skip_control.dart';
+import 'onboarding_tactile_button.dart';
 
 class OnboardingNavBar extends StatelessWidget {
   const OnboardingNavBar({
@@ -43,14 +44,10 @@ class OnboardingNavBar extends StatelessWidget {
                     ),
               ),
             ),
-          FilledButton(
+          OnboardingFilledButton(
             onPressed: isEntering ? null : () => onEnter(),
-            child: Text(
-              'ENTER',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-            ),
+            enabled: !isEntering,
+            child: Text('ENTER', style: Theme.of(context).textTheme.labelSmall),
           ),
         ],
       );
@@ -62,34 +59,24 @@ class OnboardingNavBar extends StatelessWidget {
         OnboardingSkipControl(onSkip: onSkip),
         const SizedBox(height: 8),
         if (isFirst)
-          FilledButton(
+          OnboardingFilledButton(
             onPressed: onNext,
-            child: Text(
-              'CONTINUE',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-            ),
+            child: Text('CONTINUE', style: Theme.of(context).textTheme.labelSmall),
           )
         else
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: OnboardingOutlinedButton(
                   onPressed: onBack,
                   child: Text('BACK', style: Theme.of(context).textTheme.labelSmall),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FilledButton(
+                child: OnboardingFilledButton(
                   onPressed: onNext,
-                  child: Text(
-                    'NEXT',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimary,
-                        ),
-                  ),
+                  child: Text('NEXT', style: Theme.of(context).textTheme.labelSmall),
                 ),
               ),
             ],

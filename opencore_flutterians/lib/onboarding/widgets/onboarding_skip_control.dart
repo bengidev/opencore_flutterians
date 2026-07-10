@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'onboarding_tactile_button.dart';
+
 class OnboardingSkipControl extends StatelessWidget {
   const OnboardingSkipControl({super.key, required this.onSkip});
 
@@ -9,7 +11,7 @@ class OnboardingSkipControl extends StatelessWidget {
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerRight,
-      child: TextButton(
+      child: OnboardingTextButton(
         onPressed: onSkip,
         child: Text('SKIP', style: Theme.of(context).textTheme.labelSmall),
       ),
