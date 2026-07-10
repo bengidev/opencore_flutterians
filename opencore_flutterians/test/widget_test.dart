@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:opencore_flutterians/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'helpers/hydrated_storage.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -11,17 +13,29 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
+  setUp(setUpHydratedStorage);
+
+  Widget _wrap(Widget child) {
+    return MediaQuery(
+      data: const MediaQueryData(disableAnimations: true),
+      child: child,
+    );
+  }
+
   testWidgets('first launch shows onboarding continue', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(const OpenCoreApp());
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(_wrap(const OpenCoreApp()));
+    // Bootstrap; avoid pumpAndSettle (page transitions may still be running).
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('CONTINUE'), findsOneWidget);
   });
 
   testWidgets('completed launch shows home counter', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarding.completed': true});
-    await tester.pumpWidget(const OpenCoreApp());
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(_wrap(const OpenCoreApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('CONTINUE'), findsNothing);
     expect(find.text('0'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.add));
