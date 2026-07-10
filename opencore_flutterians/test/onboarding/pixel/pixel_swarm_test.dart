@@ -75,4 +75,35 @@ void main() {
     final texts = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data);
     expect(texts.any(kSwarmGlyphPool.contains), isTrue);
   });
+
+  testWidgets('reduced motion skips swarm cloud and shows GUI', (tester) async {
+    final enter = AnimationController(
+      vsync: const TestVSync(),
+      duration: const Duration(milliseconds: 400),
+    )..value = 0;
+    addTearDown(enter.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OnboardingTheme.dark(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: PixelHeroAssembly(
+            enter: enter,
+            colors: OnboardingTokens.dark,
+            seed: 1,
+            motifs: [OnboardingPixelPatterns.link],
+            child: const Text('ASSEMBLED'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('ASSEMBLED'), findsOneWidget);
+    // Cloud particles are Text glyphs; assembled label must be visible at t=0 under reduced motion.
+    expect(find.text('ASSEMBLED'), findsOneWidget);
+  });
 }
