@@ -50,10 +50,9 @@ class PixelGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useSwarm = swarm && enter != null;
-    final layoutFontSize = cellSize * 1.35;
-    final fontSize = layoutFontSize * 0.54;
-    final charW = layoutFontSize * 0.58;
-    final charH = cellSize * 1.08;
+    final fontSize = cellSize * 1.35;
+    final charW = fontSize * 1.04;
+    final charH = cellSize * 1.35;
     final gridW = pattern.width * charW + (pattern.width - 1) * gap;
     final gridH = pattern.height * charH + (pattern.height - 1) * gap;
 
