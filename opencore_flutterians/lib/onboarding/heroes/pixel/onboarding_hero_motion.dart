@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import '../../onboarding_tokens.dart';
 
 /// Widgets using [OnboardingHeroMotion] must expose [active].
-abstract interface class HeroActiveWidget {
+abstract class HeroActiveWidget extends StatefulWidget {
+  const HeroActiveWidget({super.key});
+
   bool get active;
 }
 
 /// Shared enter + ambient life cycle for onboarding heroes.
-mixin OnboardingHeroMotion<T extends StatefulWidget> on State<T>, TickerProviderStateMixin<T> {
+mixin OnboardingHeroMotion<T extends HeroActiveWidget>
+    on State<T>, TickerProviderStateMixin<T> {
   late final AnimationController enter = AnimationController(
     vsync: this,
     duration: OnboardingTokens.durationHeroEnter,
@@ -34,7 +37,7 @@ mixin OnboardingHeroMotion<T extends StatefulWidget> on State<T>, TickerProvider
   @override
   void didUpdateWidget(covariant T oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final wasActive = (oldWidget as HeroActiveWidget).active;
+    final wasActive = oldWidget.active;
     if (heroActive && !wasActive) {
       playHero(fromStart: true);
     } else if (!heroActive && wasActive) {
