@@ -1,9 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:opencore_flutterians/core/open_core_bloc_observer.dart';
 import 'package:opencore_flutterians/onboarding/onboarding.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Bloc.observer = const OpenCoreBlocObserver();
+  HydratedBloc.storage = await HydratedStorage.build(
+    storageDirectory: kIsWeb
+        ? HydratedStorageDirectory.web
+        : HydratedStorageDirectory(
+            (await getApplicationDocumentsDirectory()).path,
+          ),
+  );
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
@@ -20,39 +32,9 @@ class OpenCoreApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const _OpenCoreRoot(),
-    );
-  }
-}
-
-class _OpenCoreRoot extends StatefulWidget {
-  const _OpenCoreRoot();
-
-  @override
-  State<_OpenCoreRoot> createState() => _OpenCoreRootState();
-}
-
-class _OpenCoreRootState extends State<_OpenCoreRoot> {
-  late final Future<Widget> _rootFuture =
-      OnboardingFacade().buildRoot(home: const OpenCoreHomePage(title: 'OpenCore'));
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Widget>(
-      future: _rootFuture,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Scaffold(
-            body: Center(child: Text('[ERROR: COULD NOT LOAD]')),
-          );
-        }
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: Text('[LOADING...]')),
-          );
-        }
-        return snapshot.data!;
-      },
+      home: OnboardingFacade().buildRoot(
+        home: const OpenCoreHomePage(title: 'OpenCore'),
+      ),
     );
   }
 }
