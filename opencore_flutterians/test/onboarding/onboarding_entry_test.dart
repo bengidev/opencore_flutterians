@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:opencore_flutterians/onboarding/bloc/onboarding_bootstrap_cubit.dart';
+import 'package:opencore_flutterians/onboarding/bloc/onboarding_bootstrap_state.dart';
 import 'package:opencore_flutterians/onboarding/onboarding_completion_store.dart';
 import 'package:opencore_flutterians/onboarding/onboarding_entry.dart';
+
+import '../helpers/hydrated_storage.dart';
 
 class _MemoryStore implements OnboardingCompletionStore {
   bool completed = false;
@@ -12,6 +17,19 @@ class _MemoryStore implements OnboardingCompletionStore {
   Future<void> markCompleted() async => completed = true;
 }
 
+Widget _wrapEntry(OnboardingCompletionStore store) {
+  return MaterialApp(
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(disableAnimations: true),
+      child: child!,
+    ),
+    home: BlocProvider(
+      create: (_) => OnboardingBootstrapCubit(store: store),
+      child: OnboardingEntry(store: store),
+    ),
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -19,39 +37,34 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
+  setUp(setUpHydratedStorage);
+
   testWidgets('skip jumps to CTA Enter', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: OnboardingEntry(
-          store: _MemoryStore(),
-          onCompleted: () {},
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(_wrapEntry(_MemoryStore()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(find.text('SKIP'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('ENTER'), findsOneWidget);
     expect(find.text('OpenCore'), findsWidgets);
   });
 
-  testWidgets('enter completes and calls onCompleted', (tester) async {
+  testWidgets('enter completes and marks store', (tester) async {
     final store = _MemoryStore();
-    var done = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: OnboardingEntry(
-          store: store,
-          onCompleted: () => done = true,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(_wrapEntry(store));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(find.text('SKIP'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
     await tester.tap(find.text('ENTER'));
-    await tester.pumpAndSettle();
-    expect(done, isTrue);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(store.completed, isTrue);
+    final bootstrap = BlocProvider.of<OnboardingBootstrapCubit>(
+      tester.element(find.byType(OnboardingEntry)),
+    );
+    expect(bootstrap.state, isA<OnboardingBootstrapShowHome>());
   });
 }
