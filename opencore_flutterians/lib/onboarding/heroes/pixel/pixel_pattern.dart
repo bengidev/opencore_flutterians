@@ -54,9 +54,8 @@ class PixelPattern {
       accent: PixelCellRole.accent,
     };
     final lines = art
-        .trim()
         .split('\n')
-        .map((line) => line.trimRight())
+        .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .toList();
     final parsed = <List<PixelCellRole>>[];
