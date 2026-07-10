@@ -50,9 +50,10 @@ class PixelGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final useSwarm = swarm && enter != null;
-    final fontSize = cellSize * 1.5;
-    final charW = fontSize * 0.58;
-    final charH = cellSize * 1.15;
+    final layoutFontSize = cellSize * 1.35;
+    final fontSize = layoutFontSize * 0.54;
+    final charW = layoutFontSize * 0.58;
+    final charH = cellSize * 1.08;
     final gridW = pattern.width * charW + (pattern.width - 1) * gap;
     final gridH = pattern.height * charH + (pattern.height - 1) * gap;
 
@@ -237,19 +238,12 @@ class _PixelGridBody extends AnimatedWidget {
       cellOpacity *= morphFill.clamp(0.0, 1.0);
     }
 
-    Widget cell = SizedBox(
-      width: charW,
-      height: charH,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: AsciiGlyph(
-          char: asciiCharForRole(role),
-          colors: colors,
-          role: role,
-          fontSize: fontSize,
-          glow: role == PixelCellRole.accent && swarm && _assembleT < 0.5,
-        ),
-      ),
+    Widget cell = AsciiGlyph(
+      char: asciiCharForRole(role),
+      colors: colors,
+      role: role,
+      fontSize: fontSize,
+      glow: role == PixelCellRole.accent && swarm && _assembleT < 0.5,
     );
 
     if (swarm && enter != null) {
