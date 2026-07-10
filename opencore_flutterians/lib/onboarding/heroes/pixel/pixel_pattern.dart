@@ -82,9 +82,9 @@ abstract final class OnboardingPixelPatterns {
 
   static final deviceScreen = PixelPattern.fromAscii('''
     ........
-    .#-#-#.
-    .#-#-#.
-    .#-#-#.
+    ..#-#-#.
+    ..#-#-#.
+    ..#-#-#.
     ........
   ''');
 

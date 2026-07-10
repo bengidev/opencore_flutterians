@@ -21,6 +21,7 @@ void main() {
   test('chat bubble patterns have uniform row widths', () {
     expectUniformRowWidths(OnboardingPixelPatterns.chatRequest);
     expectUniformRowWidths(OnboardingPixelPatterns.chatResponse);
+    expectUniformRowWidths(OnboardingPixelPatterns.deviceScreen);
     expectUniformRowWidths(OnboardingPixelPatterns.lockOpen);
   });
 
