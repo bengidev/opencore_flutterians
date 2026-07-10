@@ -143,12 +143,6 @@ abstract final class OnboardingPixelPatterns {
     .
   ''');
 
-  static final queueArrow = PixelPattern.fromAscii('''
-    .!!.
-    ..!!
-    .!!.
-  ''');
-
   static final outputLine = PixelPattern.fromAscii('''
     #######
   ''');
@@ -204,7 +198,7 @@ abstract final class OnboardingPixelPatterns {
   /// Muted queued follow-up request.
   static final chatQueued = PixelPattern.fromAscii('''
     ..------
-    .------
+    .-------
     ..------
   ''');
 }

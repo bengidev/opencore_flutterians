@@ -17,7 +17,7 @@ class OnboardingQueueHeroStrategy extends OnboardingHeroStrategy {
   Widget build({required bool active}) => OnboardingQueueHero(active: active);
 }
 
-/// Swarm → queue rows stagger-assemble with live running state.
+/// Swarm → chat request/response bubbles with queued follow-up.
 class OnboardingQueueHero extends HeroActiveWidget {
   const OnboardingQueueHero({super.key, required this.active});
 
@@ -30,27 +30,30 @@ class OnboardingQueueHero extends HeroActiveWidget {
 class _OnboardingQueueHeroState extends State<OnboardingQueueHero>
     with TickerProviderStateMixin, OnboardingHeroMotion {
   static const _seed = 33;
-  static final _motifs = [OnboardingPixelPatterns.queueArrow];
+  static final _motifs = [
+    OnboardingPixelPatterns.chatRequest,
+    OnboardingPixelPatterns.chatResponse,
+    OnboardingPixelPatterns.chatQueued,
+  ];
 
   @override
   bool get heroActive => widget.active;
 
-  late final List<Animation<double>> _rowEnters = List.generate(3, (i) {
-    final start = 0.16 + i * 0.12;
-    return CurvedAnimation(
-      parent: enter,
-      curve: Interval(
-        start,
-        (start + 0.48).clamp(0.0, 1.0),
-        curve: OnboardingTokens.easeOut,
-      ),
-    );
-  });
+  late final Animation<double> _requestEnter = CurvedAnimation(
+    parent: enter,
+    curve: const Interval(0.14, 0.52, curve: OnboardingTokens.easeOut),
+  );
+  late final Animation<double> _responseEnter = CurvedAnimation(
+    parent: enter,
+    curve: const Interval(0.28, 0.72, curve: OnboardingTokens.easeOut),
+  );
+  late final Animation<double> _queuedEnter = CurvedAnimation(
+    parent: enter,
+    curve: const Interval(0.42, 0.88, curve: OnboardingTokens.easeOut),
+  );
 
   late final Animation<double> _pulse = lifePulse();
   late final Animation<double> _progress = lifeProgress();
-
-  static const _labels = ['RUNNING…', 'QUEUED', 'QUEUED'];
 
   @override
   void initState() {
@@ -64,52 +67,63 @@ class _OnboardingQueueHeroState extends State<OnboardingQueueHero>
     final live = enter.isCompleted;
 
     return OnboardingHeroStage(
-      designHeight: 156,
+      designHeight: 168,
       child: PixelHeroAssembly(
         enter: enter,
         colors: c,
         seed: _seed,
         motifs: _motifs,
-        cloudWidth: 270,
-        cloudHeight: 140,
-        particleCount: 140,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        onReplay: replayHero,
+        cloudWidth: 320,
+        cloudHeight: 160,
+        particleCount: 160,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: PixelGrid(
-                pattern: OnboardingPixelPatterns.queueArrow,
+            Align(
+              alignment: Alignment.centerRight,
+              child: _ChatBubble(
                 colors: c,
-                cellSize: 4,
-                gap: 1,
-                enter: enter,
-                swarmSeed: _seed,
-                pulse: _pulse,
-                pulseRoles: const {PixelCellRole.accent},
+                label: 'YOU',
+                pattern: OnboardingPixelPatterns.chatRequest,
+                swarmEnter: enter,
+                reveal: _requestEnter,
+                accent: false,
+                live: live,
+                seed: _seed,
+                maxWidthFactor: 0.72,
               ),
             ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(3, (i) {
-                  final accent = i == 0;
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: i < 2 ? 8 : 0),
-                    child: _QueuePixelRow(
-                      colors: c,
-                      label: _labels[i],
-                      accent: accent,
-                      swarmEnter: enter,
-                      rowEnter: _rowEnters[i],
-                      pulse: _pulse,
-                      progress: _progress,
-                      live: live,
-                      widthFactor: 1.0 - i * 0.06,
-                      seed: _seed + i,
-                    ),
-                  );
-                }),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _ChatBubble(
+                colors: c,
+                label: 'RUNNING…',
+                pattern: OnboardingPixelPatterns.chatResponse,
+                swarmEnter: enter,
+                reveal: _responseEnter,
+                accent: true,
+                live: live,
+                seed: _seed + 1,
+                progress: _progress,
+                pulse: _pulse,
+                maxWidthFactor: 0.82,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _ChatBubble(
+                colors: c,
+                label: 'QUEUED',
+                pattern: OnboardingPixelPatterns.chatQueued,
+                swarmEnter: enter,
+                reveal: _queuedEnter,
+                accent: false,
+                live: false,
+                seed: _seed + 2,
+                maxWidthFactor: 0.64,
               ),
             ),
           ],
@@ -119,70 +133,73 @@ class _OnboardingQueueHeroState extends State<OnboardingQueueHero>
   }
 }
 
-class _QueuePixelRow extends StatelessWidget {
-  const _QueuePixelRow({
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({
     required this.colors,
     required this.label,
-    required this.accent,
+    required this.pattern,
     required this.swarmEnter,
-    required this.rowEnter,
-    required this.pulse,
-    required this.progress,
+    required this.reveal,
+    required this.accent,
     required this.live,
-    required this.widthFactor,
     required this.seed,
+    required this.maxWidthFactor,
+    this.progress,
+    this.pulse,
   });
 
   final OnboardingColorTokens colors;
   final String label;
-  final bool accent;
+  final PixelPattern pattern;
   final Animation<double> swarmEnter;
-  final Animation<double> rowEnter;
-  final Animation<double> pulse;
-  final Animation<double> progress;
+  final Animation<double> reveal;
+  final bool accent;
   final bool live;
-  final double widthFactor;
   final int seed;
+  final double maxWidthFactor;
+  final Animation<double>? progress;
+  final Animation<double>? pulse;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      child: FractionallySizedBox(
-        widthFactor: widthFactor.clamp(0.72, 1.0),
-        child: PixelPanel(
-          colors: colors,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          reveal: rowEnter,
-          child: SizedBox(
-            height: 20,
-            child: Row(
-              children: [
-                PixelStatusDot(
-                  colors: colors,
-                  animation: pulse,
-                  accent: accent,
-                  live: live,
-                  enter: swarmEnter,
-                  swarmSeed: seed,
-                ),
-                const SizedBox(width: 8),
-                PixelAsciiLabel(
-                  text: label,
-                  colors: colors,
-                  accent: accent,
-                  reveal: rowEnter,
-                ),
-                const Spacer(),
-                PixelProgressBar(
-                  colors: colors,
-                  animation: progress,
-                  live: accent && live,
-                  enter: swarmEnter,
-                  swarmSeed: seed + 5,
-                ),
-              ],
+    return FractionallySizedBox(
+      widthFactor: maxWidthFactor,
+      child: PixelPanel(
+        colors: colors,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        reveal: reveal,
+        child: Row(
+          children: [
+            PixelGrid(
+              pattern: pattern,
+              colors: colors,
+              cellSize: 3.5,
+              gap: 0.8,
+              enter: swarmEnter,
+              swarmSeed: seed,
+              pulse: accent ? pulse : null,
+              pulseRoles: const {PixelCellRole.accent},
             ),
-          ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: PixelAsciiLabel(
+                text: label,
+                colors: colors,
+                accent: accent,
+                reveal: reveal,
+              ),
+            ),
+            if (progress != null) ...[
+              const SizedBox(width: 8),
+              PixelProgressBar(
+                colors: colors,
+                animation: progress!,
+                live: live,
+                enter: swarmEnter,
+                swarmSeed: seed + 9,
+              ),
+            ],
+          ],
         ),
       ),
     );
