@@ -15,7 +15,7 @@ void main() {
 
   setUp(setUpHydratedStorage);
 
-  Widget _wrap(Widget child) {
+  Widget wrap(Widget child) {
     return MediaQuery(
       data: const MediaQueryData(disableAnimations: true),
       child: child,
@@ -24,7 +24,7 @@ void main() {
 
   testWidgets('first launch shows onboarding continue', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await tester.pumpWidget(_wrap(const OpenCoreApp()));
+    await tester.pumpWidget(wrap(const OpenCoreApp()));
     // Bootstrap; avoid pumpAndSettle (page transitions may still be running).
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -33,7 +33,7 @@ void main() {
 
   testWidgets('completed launch shows home counter', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarding.completed': true});
-    await tester.pumpWidget(_wrap(const OpenCoreApp()));
+    await tester.pumpWidget(wrap(const OpenCoreApp()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('CONTINUE'), findsNothing);

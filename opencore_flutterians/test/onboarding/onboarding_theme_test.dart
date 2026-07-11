@@ -25,7 +25,7 @@ void main() {
       expect(OnboardingTokens.radiusControl, 6);
       expect(light.scaffoldBackgroundColor, OnboardingTokens.light.black);
       expect(dark.scaffoldBackgroundColor, OnboardingTokens.dark.black);
-    }, (_, __) {
+    }, (_, _) {
       // Fonts fall back when runtime fetching is disabled in tests.
     });
   });

@@ -24,7 +24,7 @@ void main() {
 
   setUp(setUpHydratedStorage);
 
-  Widget _wrap(Widget child) {
+  Widget wrap(Widget child) {
     return MaterialApp(
       builder: (context, nested) => MediaQuery(
         data: MediaQuery.of(context).copyWith(disableAnimations: true),
@@ -38,7 +38,7 @@ void main() {
     final root = OnboardingFacade(store: _MemoryStore(false)).buildRoot(
       home: const Text('HOME'),
     );
-    await tester.pumpWidget(_wrap(root));
+    await tester.pumpWidget(wrap(root));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('CONTINUE'), findsOneWidget);
@@ -49,7 +49,7 @@ void main() {
     final root = OnboardingFacade(store: _MemoryStore(true)).buildRoot(
       home: const Text('HOME'),
     );
-    await tester.pumpWidget(_wrap(root));
+    await tester.pumpWidget(wrap(root));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('HOME'), findsOneWidget);
