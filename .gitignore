@@ -1,7 +1,8 @@
-# Local agent / tooling workspaces
+# Local agent / tooling workspaces (inspired by obra/superpowers)
 .worktrees/
 .private-journal/
 .claude/
+.superpowers/
 .cursor/
 .agents/
 .agent-shell/
