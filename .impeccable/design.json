@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-11T09:57:00.000Z",
+  "title": "Design System: OpenCore Flutterians",
+  "extensions": {
+    "colorMeta": {
+      "canvas-black": {
+        "role": "neutral",
+        "displayName": "Canvas Black",
+        "canonical": "oklch(0% 0 0)",
+        "tonalRamp": [
+          "oklch(0% 0 0)",
+          "oklch(8% 0 0)",
+          "oklch(14% 0 0)",
+          "oklch(18% 0 0)",
+          "oklch(22% 0 0)",
+          "oklch(28% 0 0)",
+          "oklch(48% 0 0)",
+          "oklch(93% 0 0)"
+        ]
+      },
+      "signal-red": {
+        "role": "primary",
+        "displayName": "Signal Red",
+        "canonical": "oklch(52% 0.21 25)",
+        "tonalRamp": [
+          "oklch(22% 0.12 25)",
+          "oklch(32% 0.15 25)",
+          "oklch(42% 0.18 25)",
+          "oklch(52% 0.21 25)",
+          "oklch(62% 0.19 25)",
+          "oklch(72% 0.16 25)",
+          "oklch(82% 0.12 25)",
+          "oklch(92% 0.08 25)"
+        ]
+      },
+      "text-display": {
+        "role": "neutral",
+        "displayName": "Text Display",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(28% 0 0)",
+          "oklch(48% 0 0)",
+          "oklch(65% 0 0)",
+          "oklch(80% 0 0)",
+          "oklch(90% 0 0)",
+          "oklch(96% 0 0)",
+          "oklch(100% 0 0)"
+        ]
+      },
+      "border-visible": {
+        "role": "neutral",
+        "displayName": "Border Visible",
+        "canonical": "oklch(28% 0 0)",
+        "tonalRamp": [
+          "oklch(8% 0 0)",
+          "oklch(14% 0 0)",
+          "oklch(18% 0 0)",
+          "oklch(22% 0 0)",
+          "oklch(28% 0 0)",
+          "oklch(48% 0 0)",
+          "oklch(65% 0 0)",
+          "oklch(93% 0 0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headlines only — Doto at 48px. Never for UI labels."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles — Space Grotesk 24px in text-display color."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Primary reading — Space Grotesk 16px."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Mono uppercase chrome — buttons, step counters, metadata."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "duration-fast",
+        "value": "160ms",
+        "purpose": "Button press, fill shifts, tactile scale."
+      },
+      {
+        "name": "duration-ui",
+        "value": "200ms",
+        "purpose": "Progress segment width/color transitions."
+      },
+      {
+        "name": "duration-page",
+        "value": "300ms",
+        "purpose": "Page transitions in onboarding flow."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Default ease-out for tactile controls."
+      },
+      {
+        "name": "ease-ui",
+        "value": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "purpose": "UI chrome transitions (progress, page)."
+      },
+      {
+        "name": "tactile-scale",
+        "value": "scale(0.97)",
+        "purpose": "Press feedback on OnboardingTactileShell."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "390px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled CTA — CONTINUE, NEXT, ENTER. White fill, black mono label, 6pt radius.",
+      "html": "<button class=\"ds-btn-primary\">CONTINUE</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-width: 120px; height: 48px; padding: 0 24px; background: #FFFFFF; color: #000000; border: none; border-radius: 6px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:hover { background: #E8E8E8; } .ds-btn-primary:active { background: #E8E8E8; transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; } .ds-btn-primary:disabled { background: rgba(102, 102, 102, 0.35); color: #666666; cursor: not-allowed; transform: none; }"
+    },
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button-outlined",
+      "description": "Secondary navigation — BACK. 1px border, transparent fill.",
+      "html": "<button class=\"ds-btn-outlined\">BACK</button>",
+      "css": ".ds-btn-outlined { display: inline-flex; align-items: center; justify-content: center; min-width: 120px; height: 48px; padding: 0 24px; background: transparent; color: #E8E8E8; border: 1px solid #333333; border-radius: 6px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-outlined:hover { background: rgba(232, 232, 232, 0.08); border-color: #E8E8E8; color: #FFFFFF; } .ds-btn-outlined:active { background: rgba(232, 232, 232, 0.08); border-width: 1.25px; border-color: #E8E8E8; color: #FFFFFF; transform: scale(0.97); } .ds-btn-outlined:focus-visible { outline: 2px solid #E8E8E8; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Button",
+      "kind": "button",
+      "refersTo": "button-text",
+      "description": "Tertiary action — SKIP. Mono uppercase, no border.",
+      "html": "<button class=\"ds-btn-text\">SKIP</button>",
+      "css": ".ds-btn-text { display: inline-flex; align-items: center; justify-content: center; padding: 10px 12px; background: transparent; color: #999999; border: none; border-radius: 6px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-text:hover { background: rgba(232, 232, 232, 0.06); color: #FFFFFF; } .ds-btn-text:active { background: rgba(232, 232, 232, 0.06); color: #FFFFFF; transform: scale(0.97); } .ds-btn-text:focus-visible { outline: 2px solid #999999; outline-offset: 2px; }"
+    },
+    {
+      "name": "Progress Indicator",
+      "kind": "custom",
+      "refersTo": "progress-active",
+      "description": "Onboarding step progress — active segment in signal red, inactive in border-visible.",
+      "html": "<div class=\"ds-progress\" role=\"progressbar\" aria-valuenow=\"2\" aria-valuemin=\"1\" aria-valuemax=\"4\"><span class=\"ds-progress-seg ds-progress-seg--done\"></span><span class=\"ds-progress-seg ds-progress-seg--active\"></span><span class=\"ds-progress-seg\"></span><span class=\"ds-progress-seg\"></span></div>",
+      "css": ".ds-progress { display: flex; align-items: center; gap: 8px; } .ds-progress-seg { display: block; width: 8px; height: 8px; border-radius: 6px; background: #333333; transition: width 200ms cubic-bezier(0.25, 0.1, 0.25, 1), background 200ms cubic-bezier(0.25, 0.1, 0.25, 1); } .ds-progress-seg--active { width: 24px; background: #D71921; } .ds-progress-seg--done { background: #333333; }"
+    },
+    {
+      "name": "Onboarding Nav Row",
+      "kind": "nav",
+      "refersTo": "button-outlined",
+      "description": "BACK + NEXT paired row with 12px gap — standard feature-page footer.",
+      "html": "<nav class=\"ds-nav-row\" aria-label=\"Onboarding navigation\"><button class=\"ds-btn-outlined ds-nav-row__back\">BACK</button><button class=\"ds-btn-primary ds-nav-row__next\">NEXT</button></nav>",
+      "css": ".ds-nav-row { display: flex; gap: 12px; width: 100%; } .ds-nav-row__back, .ds-nav-row__next { flex: 1; min-width: 0; } .ds-btn-outlined { display: inline-flex; align-items: center; justify-content: center; min-width: 120px; height: 48px; padding: 0 24px; background: transparent; color: #E8E8E8; border: 1px solid #333333; border-radius: 6px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-outlined:active { transform: scale(0.97); } .ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-width: 120px; height: 48px; padding: 0 24px; background: #FFFFFF; color: #000000; border: none; border-radius: 6px; font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:active { background: #E8E8E8; transform: scale(0.97); }"
+    },
+    {
+      "name": "Step Label",
+      "kind": "custom",
+      "refersTo": "label",
+      "description": "Feature page step counter — mono uppercase at top-right.",
+      "html": "<span class=\"ds-step-label\">01 / 04</span>",
+      "css": ".ds-step-label { font-family: 'Space Mono', ui-monospace, monospace; font-size: 11px; font-weight: 400; letter-spacing: 0.08em; color: #999999; text-transform: uppercase; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Monochrome Workbench",
+    "overview": "OpenCore's visual system is a developer workbench rendered in near-black monochrome: OLED canvas, stepped neutral surfaces, and typography that carries hierarchy before color ever does. The aesthetic draws from Nothing-inspired industrial craft—structure as ornament, subtractive composition, monospace labels at the edges—while staying inside Flutter's adaptive Material 3 shell on Android and iOS.\n\nDark mode is the primary expression (onboarding ships dark-first). Light mode mirrors the same tonal ladder with inverted ink. Interactive controls are tactile and precise: 6pt rounded rectangles, 48px touch height, scale-to-0.97 press feedback, and 160ms state transitions. Red (#D71921) is an event, not wallpaper—it marks active progress and errors only.",
+    "keyCharacteristics": [
+      "Monochrome canvas with three-layer typographic hierarchy (display → grotesk body → mono labels)",
+      "Flat surfaces; depth conveyed by tonal steps, never drop shadows",
+      "6pt control radius on buttons, progress segments, and interactive shells",
+      "Signal red reserved for active state and error feedback",
+      "Tactile press feedback (scale + fill shift) on every primary control",
+      "Developer-native density: 24px screen gutters, tight 8–12px intra-group spacing"
+    ],
+    "rules": [
+      {
+        "name": "The One Signal Rule",
+        "body": "Signal red appears only on active progress segments and error feedback. Its rarity is the point.",
+        "section": "colors"
+      },
+      {
+        "name": "The Monochrome-First Rule",
+        "body": "Any screen should remain legible in grayscale. Color encodes state, not hierarchy.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three-Layer Rule",
+        "body": "Every screen has exactly three layers of importance: display primary, grotesk secondary, mono tertiary.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Chrome Rule",
+        "body": "Button labels and step metadata use Space Mono uppercase. Prose never uses mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Shadows are prohibited on resting surfaces. Step surface tone or add a 1px border—pick one.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Ghost Card Rule",
+        "body": "Never pair 1px border with soft wide box-shadow blur ≥16px on the same element.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the scaffold at true black (#000000) in dark mode for OLED depth.",
+      "Do use 6px radius on every interactive control.",
+      "Do apply scale(0.97) + 160ms ease-out press feedback on all tappable chrome.",
+      "Do reserve Space Mono uppercase for system labels, step counters, and button copy.",
+      "Do honor prefers-reduced-motion by collapsing animations to instant state changes."
+    ],
+    "donts": [
+      "Don't ship generic chat-bubble UIs or ChatGPT-clone layouts.",
+      "Don't use SaaS landing-page aesthetics: cream cards, gradient heroes, eyebrow kickers, or ghost-card shadows.",
+      "Don't use over-rounded, bubbly consumer chrome—no 24px+ card radii.",
+      "Don't use signal red as a decorative accent on buttons, heroes, or backgrounds.",
+      "Don't pair 1px borders with wide soft shadows on the same component.",
+      "Don't flatten hierarchy by giving every element the same size and weight."
+    ]
+  }
+}
