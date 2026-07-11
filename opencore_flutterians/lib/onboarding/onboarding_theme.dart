@@ -57,6 +57,19 @@ class OnboardingTheme {
         );
 
     return base.copyWith(
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.black,
+        foregroundColor: c.textDisplay,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: grotesk(
+          size: 24,
+          weight: FontWeight.w400,
+          color: c.textDisplay,
+          height: 1.2,
+        ),
+      ),
       textTheme: TextTheme(
         displayLarge: GoogleFonts.doto(
           fontSize: 48,

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:opencore_flutterians/core/open_core_bloc_observer.dart';
 import 'package:opencore_flutterians/onboarding/onboarding.dart';
+import 'package:opencore_flutterians/onboarding/onboarding_theme.dart';
+import 'package:opencore_flutterians/onboarding/widgets/onboarding_tactile_button.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
@@ -29,9 +31,9 @@ class OpenCoreApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'OpenCore',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: OnboardingTheme.light(),
+      darkTheme: OnboardingTheme.dark(),
+      themeMode: ThemeMode.system,
       home: OnboardingFacade().buildRoot(
         home: const OpenCoreHomePage(title: 'OpenCore'),
       ),
@@ -55,24 +57,39 @@ class _OpenCoreHomePageState extends State<OpenCoreHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text('$_counter', style: Theme.of(context).textTheme.headlineMedium),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(widget.title, style: theme.textTheme.headlineMedium),
+              const Spacer(),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'You have pushed the button this many times:',
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text('$_counter', style: theme.textTheme.displayLarge),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              OnboardingFilledButton(
+                onPressed: _incrementCounter,
+                child: const Text('INCREMENT'),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }

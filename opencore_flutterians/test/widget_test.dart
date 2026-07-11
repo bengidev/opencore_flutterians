@@ -38,7 +38,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('CONTINUE'), findsNothing);
     expect(find.text('0'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.text('INCREMENT'));
     await tester.pump();
     expect(find.text('1'), findsOneWidget);
   });
