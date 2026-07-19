@@ -40,7 +40,7 @@ class _OnboardingTactileShellState extends State<OnboardingTactileShell> {
       onTap: _enabled ? widget.onPressed : null,
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1,
-        duration: OnboardingTokens.durationFast,
+        duration: _pressed ? OnboardingTokens.durationFast : OnboardingTokens.durationRelease,
         curve: OnboardingTokens.easeOut,
         child: widget.builder(context, _pressed && _enabled),
       ),
@@ -70,7 +70,7 @@ class OnboardingFilledButton extends StatelessWidget {
       enabled: isEnabled,
       builder: (context, pressed) {
         return AnimatedContainer(
-          duration: OnboardingTokens.durationFast,
+          duration: pressed ? OnboardingTokens.durationFast : OnboardingTokens.durationRelease,
           curve: OnboardingTokens.easeOut,
           constraints: const BoxConstraints(minWidth: 120, minHeight: 48),
           alignment: Alignment.center,
@@ -113,7 +113,7 @@ class OnboardingOutlinedButton extends StatelessWidget {
       onPressed: onPressed,
       builder: (context, pressed) {
         return AnimatedContainer(
-          duration: OnboardingTokens.durationFast,
+          duration: pressed ? OnboardingTokens.durationFast : OnboardingTokens.durationRelease,
           curve: OnboardingTokens.easeOut,
           constraints: const BoxConstraints(minWidth: 120, minHeight: 48),
           alignment: Alignment.center,
@@ -153,7 +153,7 @@ class OnboardingTextButton extends StatelessWidget {
       onPressed: onPressed,
       builder: (context, pressed) {
         return AnimatedContainer(
-          duration: OnboardingTokens.durationFast,
+          duration: pressed ? OnboardingTokens.durationFast : OnboardingTokens.durationRelease,
           curve: OnboardingTokens.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
