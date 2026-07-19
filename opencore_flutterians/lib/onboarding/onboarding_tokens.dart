@@ -31,9 +31,20 @@ class OnboardingTokens {
   static const accent = Color(0xFFD71921);
 
   static const durationFast = Duration(milliseconds: 160);
+  static const durationRelease = Duration(milliseconds: 120);
   static const durationUi = Duration(milliseconds: 200);
-  static const durationPage = Duration(milliseconds: 300);
+  static const durationPage = Duration(milliseconds: 250);
+
+  /// Strong ease-out — UI should start fast and feel responsive.
   static const easeOut = Cubic(0.23, 1, 0.32, 1);
+
+  /// Strong ease-in-out — on-screen movement and deliberate reveals.
+  static const easeInOut = Cubic(0.77, 0, 0.175, 1);
+
+  /// iOS-like drawer curve for page slides.
+  static const easeDrawer = Cubic(0.32, 0.72, 0, 1);
+
+  /// Legacy symmetric curve; prefer [easeOut] for interactive UI.
   static const easeUi = Cubic(0.25, 0.1, 0.25, 1);
 
   static const dark = OnboardingColorTokens(
