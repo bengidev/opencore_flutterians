@@ -9,8 +9,9 @@ import 'heroes/onboarding_hero.dart';
 import 'onboarding_completion_store.dart';
 import 'onboarding_page_catalog.dart';
 import 'onboarding_page_model.dart';
+import 'onboarding_motion.dart';
 import 'onboarding_theme.dart';
-import 'onboarding_tokens.dart';
+import 'widgets/onboarding_feature_header.dart';
 import 'widgets/onboarding_nav_bar.dart';
 import 'widgets/onboarding_page_shell.dart';
 
@@ -43,6 +44,7 @@ class _OnboardingEntryView extends StatefulWidget {
 
 class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
   PageController? _pageController;
+  double _dragDistance = 0;
 
   @override
   void dispose() {
@@ -58,17 +60,34 @@ class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
     return created;
   }
 
-  void _syncPage(OnboardingState state) {
+  void _syncPage(OnboardingState state, BuildContext context) {
     final controller = _pageController;
     if (controller == null || !controller.hasClients) return;
     final target = state.index;
     if (controller.page?.round() != target) {
-      controller.animateToPage(
-        target,
-        duration: OnboardingTokens.durationPage,
-        curve: OnboardingTokens.easeUi,
-      );
+      if (OnboardingMotion.reduceMotionOf(context)) {
+        controller.jumpToPage(target);
+      } else {
+        controller.animateToPage(
+          target,
+          duration: OnboardingMotion.pageDuration,
+          curve: OnboardingMotion.pageCurve,
+        );
+      }
     }
+  }
+
+  void _handleDragEnd(DragEndDetails details, OnboardingBloc bloc) {
+    final velocity = details.primaryVelocity ?? 0;
+    const distanceThreshold = 56.0;
+    final flick = velocity.abs() / 1000 > 0.11;
+
+    if (_dragDistance > distanceThreshold || (velocity > 200 && flick)) {
+      bloc.add(const OnboardingBackPressed());
+    } else if (_dragDistance < -distanceThreshold || (velocity < -200 && flick)) {
+      bloc.add(const OnboardingNextPressed());
+    }
+    _dragDistance = 0;
   }
 
   @override
@@ -89,7 +108,7 @@ class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
         },
         child: BlocConsumer<OnboardingBloc, OnboardingState>(
           listenWhen: (previous, current) => previous.index != current.index,
-          listener: (context, state) => _syncPage(state),
+          listener: (context, state) => _syncPage(state, context),
           builder: (context, state) {
             final featureCount = state.pages
                 .where((p) => p.kind == OnboardingPageKind.feature)
@@ -97,46 +116,65 @@ class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
             final bloc = context.read<OnboardingBloc>();
             final pageController = _controllerFor(state);
 
+            final currentPage = state.pages[state.index];
+            final onFeaturePage = currentPage.kind == OnboardingPageKind.feature;
+
             return Scaffold(
-              body: GestureDetector(
-                onHorizontalDragEnd: (details) {
-                  // Finger L→R (positive velocity) = back; R→L (negative) = next.
-                  final v = details.primaryVelocity ?? 0;
-                  if (v > 200) {
-                    bloc.add(const OnboardingBackPressed());
-                  } else if (v < -200) {
-                    bloc.add(const OnboardingNextPressed());
-                  }
-                },
-                child: PageView.builder(
-                  controller: pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: state.pages.length,
-                  itemBuilder: (context, index) {
-                    final page = state.pages[index];
-                    return OnboardingPageShell(
-                      page: page,
-                      pageIndex: index,
-                      featureCount: featureCount,
-                      hero: OnboardingHeroRegistry.build(
-                        page.heroId,
-                        active: state.index == index,
-                      ),
-                      navBar: OnboardingNavBar(
-                        kind: page.kind,
-                        isFirst: index == 0,
-                        isCta: page.kind == OnboardingPageKind.cta,
-                        enterError: state.enterError,
-                        isEntering: state.isEntering,
-                        onBack: () => bloc.add(const OnboardingBackPressed()),
-                        onNext: () => bloc.add(const OnboardingNextPressed()),
-                        onSkip: () => bloc.add(const OnboardingSkipPressed()),
-                        onEnter: () async {
-                          bloc.add(const OnboardingEnterPressed());
-                        },
-                      ),
-                    );
+              body: SafeArea(
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    _dragDistance += details.primaryDelta ?? 0;
                   },
+                  onHorizontalDragEnd: (details) {
+                    _handleDragEnd(details, bloc);
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (onFeaturePage)
+                        OnboardingFeatureHeader(
+                          pageIndex: state.index,
+                          featureCount: featureCount,
+                          stepLabel: currentPage.featureStepLabel,
+                        )
+                      else
+                        const SizedBox(height: 64),
+                      Expanded(
+                        child: PageView.builder(
+                          controller: pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: state.pages.length,
+                          itemBuilder: (context, index) {
+                            final page = state.pages[index];
+                            return OnboardingPageShell(
+                              page: page,
+                              topInset: onFeaturePage ? 48 : 0,
+                              hero: OnboardingHeroRegistry.build(
+                                page.heroId,
+                                active: state.index == index,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                        child: OnboardingNavBar(
+                          kind: currentPage.kind,
+                          isFirst: state.index == 0,
+                          isCta: currentPage.kind == OnboardingPageKind.cta,
+                          enterError: state.enterError,
+                          isEntering: state.isEntering,
+                          onBack: () => bloc.add(const OnboardingBackPressed()),
+                          onNext: () => bloc.add(const OnboardingNextPressed()),
+                          onSkip: () => bloc.add(const OnboardingSkipPressed()),
+                          onEnter: () async {
+                            bloc.add(const OnboardingEnterPressed());
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
