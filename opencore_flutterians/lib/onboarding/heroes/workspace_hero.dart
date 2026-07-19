@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../onboarding_motion.dart';
 import '../onboarding_theme.dart';
 import '../onboarding_tokens.dart';
 import 'shared/mini_chat_primitives.dart';
+import 'shared/mini_growing_feed.dart';
 import 'shared/onboarding_hero_frame.dart';
 import 'shared/onboarding_hero_lifecycle.dart';
 
@@ -26,20 +28,22 @@ class _WorkspaceHeroState extends State<WorkspaceHero>
     'Compare layout patterns…',
   ];
   static const _responses = [
-    '• Hero copy stays task-focused\n• Pairing explains E2E first',
-    '- split OnboardingHero\n+ OnboardingHeroRegistry',
-    'Sources: HIG motion, product UI density',
+    '• Hero copy stays task-focused\n• Pairing explains E2E first\n• Nav uses tactile press states\n• Keep signal red for state only\n• Progress dots replace bar\n• Skip stays low-contrast',
+    '- split OnboardingHero\n+ OnboardingHeroRegistry\n+ shared hero lifecycle\n~ pause loops off-screen\n✓ widget tests per hero\n+ feature header widget',
+    'Sources: HIG motion\nSources: product UI density\nCompare: Raycast onboarding\nCompare: linear feature tours\nNote: reduced-motion fallbacks\nRef: animations.dev easing',
   ];
 
   @override
   void initState() {
     super.initState();
-    _loop = createHeroController(duration: const Duration(milliseconds: 5400));
+    _loop = createHeroController(duration: const Duration(milliseconds: 6200));
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = OnboardingThemeColors.of(context).colors;
+    final reduceMotion = OnboardingMotion.reduceMotionOf(context);
+
     return AnimatedBuilder(
       animation: _loop,
       builder: (context, _) {
@@ -129,14 +133,14 @@ class _WorkspaceHeroState extends State<WorkspaceHero>
                       ),
                       const SizedBox(height: 6),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Text(
-                            response.isEmpty ? ' ' : response,
-                            style: GoogleFonts.spaceMono(
-                              fontSize: 10,
-                              height: 1.45,
-                              color: colors.textPrimary,
-                            ),
+                        child: MiniPinnedTextFeed(
+                          text: response.isEmpty ? ' ' : response,
+                          fadeExtent: 20,
+                          reduceMotion: reduceMotion,
+                          style: GoogleFonts.spaceMono(
+                            fontSize: 10,
+                            height: 1.45,
+                            color: colors.textPrimary,
                           ),
                         ),
                       ),
