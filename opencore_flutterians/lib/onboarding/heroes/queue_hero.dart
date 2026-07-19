@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../onboarding_motion.dart';
 import '../onboarding_theme.dart';
 import 'shared/mini_chat_primitives.dart';
+import 'shared/mini_growing_feed.dart';
 import 'shared/onboarding_hero_frame.dart';
 import 'shared/onboarding_hero_lifecycle.dart';
 
@@ -23,25 +25,36 @@ class _QueueHeroState extends State<QueueHero>
   static const _queued = [
     'Add reduced-motion fallback',
     'Write widget tests for queue state',
+    'Polish depth hero transitions',
+    'Review nav press motion',
+    'Extract shared hero primitives',
     'Ship when CI is green',
+    'Tune reasoning tree animation',
+    'Add more demo queue items',
   ];
 
   @override
   void initState() {
     super.initState();
-    _loop = createHeroController(duration: const Duration(milliseconds: 4800));
+    _loop = createHeroController(duration: const Duration(milliseconds: 8000));
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = OnboardingThemeColors.of(context).colors;
+    final reduceMotion = OnboardingMotion.reduceMotionOf(context);
+
     return AnimatedBuilder(
       animation: _loop,
       builder: (context, _) {
         final t = _loop.value;
         final streamChars = (_activeResponse.length * ((t * 1.4) % 1.0)).floor();
-        final visibleQueued = ((t * 3.2).floor()).clamp(0, _queued.length);
         final progress = (t * 1.4) % 1.0;
+        final queueReveal = MiniGrowingFeed.reveal(
+          t: t,
+          itemCount: _queued.length,
+          buildPortion: 0.82,
+        );
 
         return OnboardingHeroFrame(
           child: Column(
@@ -105,17 +118,17 @@ class _QueueHeroState extends State<QueueHero>
               const SizedBox(height: 6),
               Expanded(
                 flex: 2,
-                child: ListView.separated(
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: visibleQueued,
-                  separatorBuilder: (_, _) => const SizedBox(height: 6),
-                  itemBuilder: (context, index) {
-                    return _QueueRow(
-                      index: index + 1,
-                      label: _queued[index],
-                    );
-                  },
+                child: MiniGrowingFeed(
+                  visibleCount: queueReveal.count,
+                  revealScaled: queueReveal.scaled,
+                  itemHeight: 38,
+                  itemGap: 6,
+                  fadeExtent: 24,
+                  reduceMotion: reduceMotion,
+                  itemBuilder: (context, index) => _QueueRow(
+                    index: index + 1,
+                    label: _queued[index],
+                  ),
                 ),
               ),
             ],
