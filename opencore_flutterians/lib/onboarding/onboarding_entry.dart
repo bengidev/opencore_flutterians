@@ -90,6 +90,14 @@ class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
     _dragDistance = 0;
   }
 
+  /// Page chrome tracks the visible page during [PageController] transitions.
+  int _displayPageIndex(PageController controller, OnboardingState state) {
+    if (!controller.hasClients) return state.index;
+    final page = controller.page;
+    if (page == null) return state.index;
+    return page.round().clamp(0, state.pages.length - 1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final brightness = MediaQuery.platformBrightnessOf(context);
@@ -116,64 +124,81 @@ class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
             final bloc = context.read<OnboardingBloc>();
             final pageController = _controllerFor(state);
 
-            final currentPage = state.pages[state.index];
-            final onFeaturePage = currentPage.kind == OnboardingPageKind.feature;
-
             return Scaffold(
               body: SafeArea(
                 child: GestureDetector(
+                  onHorizontalDragStart: (_) => _dragDistance = 0,
                   onHorizontalDragUpdate: (details) {
                     _dragDistance += details.primaryDelta ?? 0;
                   },
                   onHorizontalDragEnd: (details) {
                     _handleDragEnd(details, bloc);
                   },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (onFeaturePage)
-                        OnboardingFeatureHeader(
-                          pageIndex: state.index,
-                          featureCount: featureCount,
-                          stepLabel: currentPage.featureStepLabel,
-                        )
-                      else
-                        const SizedBox(height: 64),
-                      Expanded(
-                        child: PageView.builder(
-                          controller: pageController,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: state.pages.length,
-                          itemBuilder: (context, index) {
-                            final page = state.pages[index];
-                            return OnboardingPageShell(
-                              page: page,
-                              topInset: onFeaturePage ? 48 : 0,
-                              hero: OnboardingHeroRegistry.build(
-                                page.heroId,
-                                active: state.index == index,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                        child: OnboardingNavBar(
-                          kind: currentPage.kind,
-                          isFirst: state.index == 0,
-                          isCta: currentPage.kind == OnboardingPageKind.cta,
-                          enterError: state.enterError,
-                          isEntering: state.isEntering,
-                          onBack: () => bloc.add(const OnboardingBackPressed()),
-                          onNext: () => bloc.add(const OnboardingNextPressed()),
-                          onSkip: () => bloc.add(const OnboardingSkipPressed()),
-                          onEnter: () async {
-                            bloc.add(const OnboardingEnterPressed());
-                          },
-                        ),
-                      ),
-                    ],
+                  onHorizontalDragCancel: () => _dragDistance = 0,
+                  child: AnimatedBuilder(
+                    animation: pageController,
+                    builder: (context, _) {
+                      final displayIndex =
+                          _displayPageIndex(pageController, state);
+                      final displayPage = state.pages[displayIndex];
+                      final onFeaturePage =
+                          displayPage.kind == OnboardingPageKind.feature;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (onFeaturePage)
+                            OnboardingFeatureHeader(
+                              pageIndex: displayIndex,
+                              featureCount: featureCount,
+                              stepLabel: displayPage.featureStepLabel,
+                            )
+                          else
+                            const SizedBox(height: 64),
+                          Expanded(
+                            child: PageView.builder(
+                              controller: pageController,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: state.pages.length,
+                              itemBuilder: (context, index) {
+                                final page = state.pages[index];
+                                return OnboardingPageShell(
+                                  page: page,
+                                  topInset: page.kind ==
+                                          OnboardingPageKind.feature
+                                      ? 48
+                                      : 0,
+                                  hero: OnboardingHeroRegistry.build(
+                                    page.heroId,
+                                    active: state.index == index,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                            child: OnboardingNavBar(
+                              kind: displayPage.kind,
+                              isFirst: displayIndex == 0,
+                              isCta:
+                                  displayPage.kind == OnboardingPageKind.cta,
+                              enterError: state.enterError,
+                              isEntering: state.isEntering,
+                              onBack: () =>
+                                  bloc.add(const OnboardingBackPressed()),
+                              onNext: () =>
+                                  bloc.add(const OnboardingNextPressed()),
+                              onSkip: () =>
+                                  bloc.add(const OnboardingSkipPressed()),
+                              onEnter: () async {
+                                bloc.add(const OnboardingEnterPressed());
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
