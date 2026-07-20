@@ -53,6 +53,8 @@ class OnboardingNavBar extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
                       enterError!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Theme.of(context).colorScheme.error,
                           ),
@@ -86,7 +88,7 @@ class OnboardingNavBar extends StatelessWidget {
               ? OnboardingFilledButton(
                   key: const ValueKey('nav-continue'),
                   onPressed: onNext,
-                  child: Text('CONTINUE', style: Theme.of(context).textTheme.labelSmall),
+                  child: const Text('CONTINUE'),
                 )
               : Row(
                   key: const ValueKey('nav-back-next'),
@@ -94,14 +96,14 @@ class OnboardingNavBar extends StatelessWidget {
                     Expanded(
                       child: OnboardingOutlinedButton(
                         onPressed: onBack,
-                        child: Text('BACK', style: Theme.of(context).textTheme.labelSmall),
+                        child: const Text('BACK'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: OnboardingFilledButton(
                         onPressed: onNext,
-                        child: Text('NEXT', style: Theme.of(context).textTheme.labelSmall),
+                        child: const Text('NEXT'),
                       ),
                     ),
                   ],
@@ -143,7 +145,6 @@ class _EnterLabel extends StatelessWidget {
           : Text(
               'ENTER',
               key: const ValueKey('enter-label'),
-              style: Theme.of(context).textTheme.labelSmall,
             ),
     );
   }
