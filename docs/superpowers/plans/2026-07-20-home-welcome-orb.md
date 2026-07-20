@@ -132,8 +132,6 @@ class HomeTokens {
 }
 ```
 
-Fix import: use `package:flutter/material.dart` instead of animation-only so `Color` resolves.
-
 `lib/home/home_theme.dart`:
 
 ```dart
