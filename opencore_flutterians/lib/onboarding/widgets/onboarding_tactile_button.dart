@@ -73,6 +73,7 @@ class OnboardingFilledButton extends StatelessWidget {
           duration: pressed ? OnboardingTokens.durationFast : OnboardingTokens.durationRelease,
           curve: OnboardingTokens.easeOut,
           constraints: const BoxConstraints(minWidth: 120, minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: !isEnabled
@@ -85,7 +86,7 @@ class OnboardingFilledButton extends StatelessWidget {
           child: DefaultTextStyle.merge(
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
                   color: isEnabled ? c.black : c.textDisabled,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                 ),
             child: child,
           ),
@@ -116,6 +117,7 @@ class OnboardingOutlinedButton extends StatelessWidget {
           duration: pressed ? OnboardingTokens.durationFast : OnboardingTokens.durationRelease,
           curve: OnboardingTokens.easeOut,
           constraints: const BoxConstraints(minWidth: 120, minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: pressed ? c.textPrimary.withValues(alpha: 0.08) : Colors.transparent,
@@ -126,7 +128,10 @@ class OnboardingOutlinedButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl),
           ),
           child: DefaultTextStyle.merge(
-            style: TextStyle(color: pressed ? c.textDisplay : c.textPrimary),
+            style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                  color: pressed ? c.textDisplay : c.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
             child: child,
           ),
         );
@@ -163,7 +168,7 @@ class OnboardingTextButton extends StatelessWidget {
           child: DefaultTextStyle.merge(
             style: Theme.of(context).textTheme.labelSmall!.copyWith(
                   color: pressed ? c.textDisplay : c.textSecondary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.bold,
                 ),
             child: child,
           ),
