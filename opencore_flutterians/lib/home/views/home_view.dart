@@ -27,45 +27,51 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return ColoredBox(
       color: colors.surfaceBase,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                HomePressable(
-                  onPressed: () {},
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.menu, color: colors.textPrimary),
+      child: SafeArea(
+        // Tab bar already insets the bottom (home indicator).
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  HomePressable(
+                    onPressed: () {},
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(Icons.menu, color: colors.textPrimary),
+                    ),
                   ),
-                ),
-                HomePressable(
-                  onPressed: () {},
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Icon(Icons.add, color: colors.textPrimary),
+                  HomePressable(
+                    onPressed: () {},
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(Icons.add, color: colors.textPrimary),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(child: HomeWelcomeView(orbActive: widget.orbActive)),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Column(
-              children: [
-                HomeComposerView(controller: _draft),
-                const SizedBox(height: 10),
-                const HomeModelRail(),
-              ],
+            Expanded(child: HomeWelcomeView(orbActive: widget.orbActive)),
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8 + keyboardInset),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HomeComposerView(controller: _draft),
+                  const SizedBox(height: 10),
+                  const HomeModelRail(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
