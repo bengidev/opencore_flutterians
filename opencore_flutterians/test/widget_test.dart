@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:opencore_flutterians/home/home.dart';
 import 'package:opencore_flutterians/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,15 +32,13 @@ void main() {
     expect(find.text('CONTINUE'), findsOneWidget);
   });
 
-  testWidgets('completed launch shows home counter', (tester) async {
+  testWidgets('completed launch shows home shell', (tester) async {
     SharedPreferences.setMockInitialValues({'onboarding.completed': true});
     await tester.pumpWidget(wrap(const OpenCoreApp()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('CONTINUE'), findsNothing);
-    expect(find.text('0'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text(HomeTokens.greeting), findsOneWidget);
+    expect(find.byKey(const Key('homeStickyTabBar')), findsOneWidget);
   });
 }
