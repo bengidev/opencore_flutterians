@@ -1,101 +1,535 @@
-# Home Welcome Shell & Particle Orb Implementation Plan
+# Home Welcome GUI + Particle Orb Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a Flutter `home` welcome shell (top bar + progressive particle orb + greeting) as the post-onboarding screen, with viewport-responsive layout for home and onboarding, without frame-time spikes.
+**Goal:** Ship a Flutter `home` module that visually replicates the OpenCore Swifters home welcome GUI, with a near-exact bake-to-layers particle orb (`home_orb_*`) and a sticky bottom tab shell wired as the post-onboarding root.
 
-**Architecture:** New `lib/home/` module mirrors `onboarding`. The hero uses Swift-parity pre-rasterized `ui.Image` layers (`lib/home/home_orb/`) animated with transform/opacity only, revealed core→outer. `HomeWelcomeLayoutMetrics` and `OnboardingLayoutMetrics` drive sizes from viewport.
+**Architecture:** UI-only `lib/home/` module. Particles are baked once into 7 `ui.Image` layers plus orbit/spark sprites, then animated with transform/opacity only. Shell uses lightweight local state. `HomeFacade.buildRoot()` replaces the placeholder counter page after onboarding.
 
-**Tech Stack:** Flutter 3 / Dart 3.12, `google_fonts`, `flutter_test`, no new packages. Source of truth for orb math: `/Users/beng/Documents/iOS Projects/opencore_swifters/OpenCore/OpenCore/Features/Home/Views/HomeParticleOrbView.swift`.
-
-**Spec:** `docs/superpowers/specs/2026-07-20-home-welcome-orb-design.md`
+**Tech Stack:** Flutter 3 / Dart 3.12, `google_fonts` (Space Mono / monospace greeting), existing `OnboardingFacade` wiring, `flutter_test`.
 
 ## Global Constraints
 
-- Package root for Dart code: `opencore_flutterians/` (app package name `opencore_flutterians`)
-- Module path: `lib/home/`; orb under `lib/home/home_orb/` (never a bare `orb/` folder)
-- Type prefix: `Home` / `HomeOrb`
-- Scope: welcome shell only — no composer, bottom tabs, chat, or API
-- Orb: bake bitmaps once; animate transform + opacity only; never per-particle paint each frame
-- Stage-in: core first; enter from scale ~0.95 + opacity (never `scale(0)`); ease-out ~180–250ms; stagger ~40–70ms
-- Emil polish: press scale ~0.97 / ~160ms ease-out on top-bar buttons; pause motion on reduce-motion / inactive
-- Responsiveness: home **and** onboarding use viewport metrics; hit targets ≥ 44 logical px
-- Light monochrome home theme; do not leave Material purple seed styling on `HomePage`
-- Tests run from `opencore_flutterians/`: `flutter test …`
-- Prefer small focused files; do not dump the entire Swift port into one 1k+ line file
+- Package root: `opencore_flutterians/` (all `lib/` and `test/` paths below are relative to this).
+- Orb files must use `home_orb_*` prefix under `lib/home/home_orb/`.
+- Bottom nav is a **sticky** tab bar (pinned; content inset above it).
+- Do **not** redraw ~1,100 particles every frame; bake-then-animate only.
+- Orb tint `#141414`, accent `#2B2B2B` (Swift light palette).
+- Shell press feedback: scale `0.97`, 140–160ms ease-out; tab morph ≤220ms ease-out; no bounce.
+- UI-only: no chat/API/model catalog.
+- Tests: `GoogleFonts.config.allowRuntimeFetching = false` in `setUpAll`.
+- Prefer `MediaQuery.disableAnimations: true` in widget tests that host the orb.
+- Commit after each task.
 
-## File structure
+## File map
 
-| File | Responsibility |
+| Path | Responsibility |
 | --- | --- |
-| `lib/home/home.dart` | Barrel exports |
-| `lib/home/home_tokens.dart` | Light color / motion tokens |
-| `lib/home/home_theme.dart` | `ThemeData` + `HomeThemeColors` |
-| `lib/home/home_welcome_layout_metrics.dart` | Viewport → spacers / orb height / padding |
-| `lib/home/home_top_bar.dart` | Menu + new-chat visual buttons |
-| `lib/home/home_welcome_view.dart` | Orb + greeting block |
-| `lib/home/home_page.dart` | Scaffold root |
-| `lib/home/home_orb/home_orb_metrics.dart` | Canvas / field / glyph constants |
-| `lib/home/home_orb/home_orb_math.dart` | Noise + gaussian |
-| `lib/home/home_orb/home_orb_layout.dart` | Deterministic particle seeds |
-| `lib/home/home_orb/home_orb_renderer.dart` | Bake `ui.Image`s |
-| `lib/home/home_orb/home_orb_asset_pack.dart` | Pack + cache |
-| `lib/home/home_orb/home_orb_stage.dart` | Stage enum / ordering |
-| `lib/home/home_orb/home_orb_view.dart` | Widget + progressive animation |
-| `lib/onboarding/onboarding_layout_metrics.dart` | Onboarding viewport metrics |
-| `lib/main.dart` | Wire `HomePage` |
-| Tests under `test/home/` and extend `test/onboarding/` | |
+| `lib/home/home.dart` | Public exports |
+| `lib/home/home_facade.dart` | `buildRoot()` → tab shell |
+| `lib/home/home_tokens.dart` | Radii, durations, curves, copy strings |
+| `lib/home/home_theme.dart` | Grayscale palette + `ThemeExtension` |
+| `lib/home/views/home_tab_shell.dart` | Sticky bottom tabs + page host |
+| `lib/home/views/home_view.dart` | Top bar + welcome + composer + rail |
+| `lib/home/views/home_welcome_view.dart` | Orb host + greeting + encryption copy |
+| `lib/home/views/home_composer_view.dart` | Prompt card chrome |
+| `lib/home/views/home_model_rail.dart` | Model / Max / context chips |
+| `lib/home/views/home_placeholder_page.dart` | Settings & About stubs |
+| `lib/home/views/home_pressable.dart` | Shared scale-0.97 press wrapper |
+| `lib/home/home_orb/home_orb_math.dart` | Deterministic noise + gaussian |
+| `lib/home/home_orb/home_orb_metrics.dart` | Canvas metrics + glyph ramp |
+| `lib/home/home_orb/home_orb_layout.dart` | Particle/seed factories |
+| `lib/home/home_orb/home_orb_layer_pack.dart` | Layer/orbit/spark descriptors + pack |
+| `lib/home/home_orb/home_orb_baker.dart` | Bake pack → images (isolate-friendly) |
+| `lib/home/home_orb/home_orb_animator.dart` | Controllers + sample functions |
+| `lib/home/home_orb/home_orb_view.dart` | Layered animated orb widget |
+| `lib/main.dart` | Wire `HomeFacade` as onboarding home |
+| `test/home/...` | Matching tests |
 
 ---
 
-### Task 1: Home welcome layout metrics
+### Task 1: Home theme, tokens, facade scaffold
 
 **Files:**
-- Create: `opencore_flutterians/lib/home/home_welcome_layout_metrics.dart`
-- Test: `opencore_flutterians/test/home/home_welcome_layout_metrics_test.dart`
+- Create: `lib/home/home_tokens.dart`
+- Create: `lib/home/home_theme.dart`
+- Create: `lib/home/home_facade.dart`
+- Create: `lib/home/home.dart`
+- Create: `lib/home/views/home_placeholder_page.dart`
+- Create: `lib/home/views/home_tab_shell.dart` (minimal stub: single child for now)
+- Test: `test/home/home_facade_test.dart`
 
 **Interfaces:**
-- Produces: `HomeWelcomeLayoutMetrics.resolve(double viewportHeight)` → `HomeWelcomeLayoutMetrics` with `topSpacerMinLength`, `bottomSpacerMinLength`, `orbHeight`, `orbBottomPadding`
+- Produces: `HomeFacade.buildRoot() → Widget`
+- Produces: `HomeTokens`, `HomeColors`, `HomeTheme`
 
 - [ ] **Step 1: Write the failing test**
 
 ```dart
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencore_flutterians/home/home_welcome_layout_metrics.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:opencore_flutterians/home/home.dart';
 
 void main() {
-  test('zero viewport uses standard defaults', () {
-    final m = HomeWelcomeLayoutMetrics.resolve(0);
-    expect(m.orbHeight, 260);
-    expect(m.orbBottomPadding, 28);
-    expect(m.topSpacerMinLength, 72);
-    expect(m.bottomSpacerMinLength, 72);
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  test('tall viewport keeps standard orb and centers', () {
-    final m = HomeWelcomeLayoutMetrics.resolve(700);
-    expect(m.orbHeight, 260);
-    expect(m.topSpacerMinLength, greaterThanOrEqualTo(16));
-    expect(m.bottomSpacerMinLength, m.topSpacerMinLength);
-  });
+  testWidgets('HomeFacade.buildRoot shows sticky tab labels', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: HomeFacade().buildRoot()),
+    );
+    await tester.pump();
 
-  test('short viewport falls back to compact orb', () {
-    final m = HomeWelcomeLayoutMetrics.resolve(280);
-    expect(m.orbHeight, 200);
-    expect(m.orbBottomPadding, 20);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
   });
 }
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd opencore_flutterians && flutter test test/home/home_welcome_layout_metrics_test.dart`
+Run: `cd opencore_flutterians && flutter test test/home/home_facade_test.dart`
 
-Expected: FAIL (library/file not found)
+Expected: FAIL — `home.dart` / `HomeFacade` not found.
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Implement tokens, theme, placeholder, minimal shell, facade**
 
-Port Swift `HomeWelcomeLayoutMetrics` from `HomeWelcomeView.swift` (heroTextBlockHeight 66, minEdgeSpacing 16, standard 260/28, compact 200/20).
+`lib/home/home_tokens.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+
+class HomeTokens {
+  static const radiusPill = 999.0;
+  static const radiusComposer = 28.0;
+  static const radiusTabBar = 28.0;
+  static const radiusTabActive = 16.0;
+
+  static const durationPress = Duration(milliseconds: 150);
+  static const durationTab = Duration(milliseconds: 200);
+  static const durationUi = Duration(milliseconds: 220);
+
+  static const easeOut = Cubic(0.23, 1, 0.32, 1);
+  static const easeInOut = Cubic(0.77, 0, 0.175, 1);
+
+  static const pressScale = 0.97;
+
+  static const greeting = 'Hi! How can I help you?';
+  static const encryptionLine1 = 'Chats are end-to-end encrypted.';
+  static const encryptionLine2 = 'Your data is safe.';
+  static const composerHint = 'Ask anything... @files, \$skills, /commands';
+  static const modelTitle = 'Google: Gemma 4 26B A4B';
+  static const speedTitle = 'Max';
+  static const contextLabel = '0';
+
+  static const orbTint = Color(0xFF141414);
+  static const orbAccent = Color(0xFF2B2B2B);
+}
+```
+
+Fix import: use `package:flutter/material.dart` instead of animation-only so `Color` resolves.
+
+`lib/home/home_theme.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+
+@immutable
+class HomeColors extends ThemeExtension<HomeColors> {
+  const HomeColors({
+    required this.surfaceBase,
+    required this.surfaceRaised,
+    required this.surfaceMuted,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textTertiary,
+    required this.border,
+    required this.tabActiveFill,
+    required this.orbTint,
+    required this.orbAccent,
+  });
+
+  final Color surfaceBase;
+  final Color surfaceRaised;
+  final Color surfaceMuted;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textTertiary;
+  final Color border;
+  final Color tabActiveFill;
+  final Color orbTint;
+  final Color orbAccent;
+
+  static const light = HomeColors(
+    surfaceBase: Color(0xFFFFFFFF),
+    surfaceRaised: Color(0xFFF7F7F7),
+    surfaceMuted: Color(0xFFEEEEEE),
+    textPrimary: Color(0xFF141414),
+    textSecondary: Color(0xFF6B6B6B),
+    textTertiary: Color(0xFF9A9A9A),
+    border: Color(0xFFE6E6E6),
+    tabActiveFill: Color(0xFFE8E8E8),
+    orbTint: Color(0xFF141414),
+    orbAccent: Color(0xFF2B2B2B),
+  );
+
+  static HomeColors of(BuildContext context) =>
+      Theme.of(context).extension<HomeColors>() ?? light;
+
+  @override
+  HomeColors copyWith({
+    Color? surfaceBase,
+    Color? surfaceRaised,
+    Color? surfaceMuted,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textTertiary,
+    Color? border,
+    Color? tabActiveFill,
+    Color? orbTint,
+    Color? orbAccent,
+  }) {
+    return HomeColors(
+      surfaceBase: surfaceBase ?? this.surfaceBase,
+      surfaceRaised: surfaceRaised ?? this.surfaceRaised,
+      surfaceMuted: surfaceMuted ?? this.surfaceMuted,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textTertiary: textTertiary ?? this.textTertiary,
+      border: border ?? this.border,
+      tabActiveFill: tabActiveFill ?? this.tabActiveFill,
+      orbTint: orbTint ?? this.orbTint,
+      orbAccent: orbAccent ?? this.orbAccent,
+    );
+  }
+
+  @override
+  HomeColors lerp(ThemeExtension<HomeColors>? other, double t) {
+    if (other is! HomeColors) return this;
+    return HomeColors(
+      surfaceBase: Color.lerp(surfaceBase, other.surfaceBase, t)!,
+      surfaceRaised: Color.lerp(surfaceRaised, other.surfaceRaised, t)!,
+      surfaceMuted: Color.lerp(surfaceMuted, other.surfaceMuted, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      tabActiveFill: Color.lerp(tabActiveFill, other.tabActiveFill, t)!,
+      orbTint: Color.lerp(orbTint, other.orbTint, t)!,
+      orbAccent: Color.lerp(orbAccent, other.orbAccent, t)!,
+    );
+  }
+}
+
+class HomeTheme {
+  static ThemeData light() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: HomeColors.light.surfaceBase,
+      extensions: const [HomeColors.light],
+    );
+  }
+}
+```
+
+`lib/home/views/home_placeholder_page.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import '../home_theme.dart';
+
+class HomePlaceholderPage extends StatelessWidget {
+  const HomePlaceholderPage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = HomeColors.of(context);
+    return Center(
+      child: Text(
+        title,
+        style: TextStyle(color: colors.textSecondary, fontSize: 16),
+      ),
+    );
+  }
+}
+```
+
+`lib/home/views/home_tab_shell.dart` (minimal — full sticky chrome in Task 2):
+
+```dart
+import 'package:flutter/material.dart';
+import '../home_theme.dart';
+import 'home_placeholder_page.dart';
+
+class HomeTabShell extends StatefulWidget {
+  const HomeTabShell({super.key});
+
+  @override
+  State<HomeTabShell> createState() => _HomeTabShellState();
+}
+
+class _HomeTabShellState extends State<HomeTabShell> {
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = HomeColors.of(context);
+    final pages = const [
+      ColoredBox(color: Colors.white, child: SizedBox.expand()),
+      HomePlaceholderPage(title: 'Settings'),
+      HomePlaceholderPage(title: 'About'),
+    ];
+
+    return Scaffold(
+      backgroundColor: colors.surfaceBase,
+      body: IndexedStack(index: _index, children: pages),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            TextButton(
+              onPressed: () => setState(() => _index = 0),
+              child: const Text('Home'),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _index = 1),
+              child: const Text('Settings'),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _index = 2),
+              child: const Text('About'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+`lib/home/home_facade.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'home_theme.dart';
+import 'views/home_tab_shell.dart';
+
+class HomeFacade {
+  Widget buildRoot() {
+    return Theme(
+      data: HomeTheme.light(),
+      child: const HomeTabShell(),
+    );
+  }
+}
+```
+
+`lib/home/home.dart`:
+
+```dart
+export 'home_facade.dart';
+export 'home_theme.dart';
+export 'home_tokens.dart';
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd opencore_flutterians && flutter test test/home/home_facade_test.dart`
+
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add opencore_flutterians/lib/home opencore_flutterians/test/home/home_facade_test.dart
+git commit -m "$(cat <<'EOF'
+Add home module scaffold with facade and theme.
+
+EOF
+)"
+```
+
+---
+
+### Task 2: Sticky bottom tab bar polish
+
+**Files:**
+- Modify: `lib/home/views/home_tab_shell.dart`
+- Create: `lib/home/views/home_pressable.dart`
+- Test: `test/home/home_tab_shell_test.dart`
+
+**Interfaces:**
+- Consumes: `HomeColors`, `HomeTokens`
+- Produces: sticky pill tab bar; `IndexedStack` keeps pages alive (orb cache later)
+
+- [ ] **Step 1: Write the failing test**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:opencore_flutterians/home/home.dart';
+import 'package:opencore_flutterians/home/views/home_tab_shell.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+
+  testWidgets('tapping Settings shows placeholder and keeps bar pinned',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(theme: HomeTheme.light(), home: const HomeTabShell()),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+
+    expect(find.text('Settings'), findsWidgets);
+    expect(find.byType(HomeTabShell), findsOneWidget);
+    // Placeholder title appears in body
+    expect(find.text('Settings'), findsAtLeastNWidgets(2));
+  });
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails / tighten assertion**
+
+Run: `cd opencore_flutterians && flutter test test/home/home_tab_shell_test.dart`
+
+If the minimal shell already passes, proceed to replace chrome and keep the test green with a key assertion:
+
+Add `Key('homeStickyTabBar')` on the sticky bar container and assert `find.byKey(const Key('homeStickyTabBar'))`.
+
+- [ ] **Step 3: Implement pressable + sticky pill bar**
+
+`lib/home/views/home_pressable.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import '../home_tokens.dart';
+
+class HomePressable extends StatefulWidget {
+  const HomePressable({
+    super.key,
+    required this.onPressed,
+    required this.child,
+  });
+
+  final VoidCallback? onPressed;
+  final Widget child;
+
+  @override
+  State<HomePressable> createState() => _HomePressableState();
+}
+
+class _HomePressableState extends State<HomePressable> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.onPressed == null ? null : (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: widget.onPressed,
+      child: AnimatedScale(
+        scale: _pressed ? HomeTokens.pressScale : 1,
+        duration: HomeTokens.durationPress,
+        curve: HomeTokens.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+```
+
+Rewrite `home_tab_shell.dart` bottom bar as a pinned `SafeArea` + rounded container (`Key('homeStickyTabBar')`), three items with icon+label, active fill `tabActiveFill`, `AnimatedContainer` ≤200ms `easeOut`. Keep `IndexedStack`. Body pages stay stubs until Task 3.
+
+Icons: `Icons.home_outlined` / `Icons.settings_outlined` / `Icons.info_outline`.
+
+- [ ] **Step 4: Run tests**
+
+Run: `cd opencore_flutterians && flutter test test/home/home_tab_shell_test.dart test/home/home_facade_test.dart`
+
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add opencore_flutterians/lib/home/views/home_tab_shell.dart \
+  opencore_flutterians/lib/home/views/home_pressable.dart \
+  opencore_flutterians/test/home/home_tab_shell_test.dart
+git commit -m "$(cat <<'EOF'
+Polish sticky home tab bar with press feedback.
+
+EOF
+)"
+```
+
+---
+
+### Task 3: Home view chrome (top bar + welcome copy, orb placeholder)
+
+**Files:**
+- Create: `lib/home/views/home_view.dart`
+- Create: `lib/home/views/home_welcome_view.dart`
+- Create: `lib/home/views/home_welcome_layout.dart`
+- Modify: `lib/home/views/home_tab_shell.dart` (Home tab → `HomeView`)
+- Modify: `lib/home/home.dart` (export views if needed)
+- Test: `test/home/home_welcome_view_test.dart`
+
+**Interfaces:**
+- Produces: `HomeWelcomeLayoutMetrics.resolve(viewportHeight) → {topSpacer, bottomSpacer, orbHeight, orbBottomPadding}`
+- Produces: greeting + encryption copy visible
+
+- [ ] **Step 1: Write the failing test**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:opencore_flutterians/home/home.dart';
+import 'package:opencore_flutterians/home/views/home_view.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+
+  testWidgets('home welcome shows greeting and encryption copy', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HomeTheme.light(),
+        home: const Scaffold(body: HomeView()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(HomeTokens.greeting), findsOneWidget);
+    expect(find.text(HomeTokens.encryptionLine1), findsOneWidget);
+    expect(find.text(HomeTokens.encryptionLine2), findsOneWidget);
+  });
+}
+```
+
+- [ ] **Step 2: Run test — expect FAIL**
+
+Run: `cd opencore_flutterians && flutter test test/home/home_welcome_view_test.dart`
+
+- [ ] **Step 3: Implement layout metrics + welcome + home view**
+
+`lib/home/views/home_welcome_layout.dart` — port Swift metrics:
 
 ```dart
 class HomeWelcomeLayoutMetrics {
@@ -127,6 +561,7 @@ class HomeWelcomeLayoutMetrics {
         orbBottomPadding: standardOrbPadding,
       );
     }
+
     final standard = _centered(
       viewportHeight: viewportHeight,
       orbHeight: standardOrbHeight,
@@ -136,13 +571,12 @@ class HomeWelcomeLayoutMetrics {
 
     final compactHero =
         compactOrbHeight + compactOrbPadding + heroTextBlockHeight;
-    final spacing =
-        (viewportHeight - compactHero) / 2 < minEdgeSpacing
-            ? minEdgeSpacing
-            : (viewportHeight - compactHero) / 2;
+    final spacing = (viewportHeight - compactHero) / 2;
+    final edge = spacing < minEdgeSpacing ? minEdgeSpacing : spacing;
+
     return HomeWelcomeLayoutMetrics(
-      topSpacerMinLength: spacing,
-      bottomSpacerMinLength: spacing,
+      topSpacerMinLength: edge,
+      bottomSpacerMinLength: edge,
       orbHeight: compactOrbHeight,
       orbBottomPadding: compactOrbPadding,
     );
@@ -155,12 +589,11 @@ class HomeWelcomeLayoutMetrics {
   }) {
     final heroHeight = orbHeight + orbBottomPadding + heroTextBlockHeight;
     if (heroHeight > viewportHeight) return null;
-    final spacing = (viewportHeight - heroHeight) / 2 < minEdgeSpacing
-        ? minEdgeSpacing
-        : (viewportHeight - heroHeight) / 2;
+    final spacing = (viewportHeight - heroHeight) / 2;
+    final edge = spacing < minEdgeSpacing ? minEdgeSpacing : spacing;
     return HomeWelcomeLayoutMetrics(
-      topSpacerMinLength: spacing,
-      bottomSpacerMinLength: spacing,
+      topSpacerMinLength: edge,
+      bottomSpacerMinLength: edge,
       orbHeight: orbHeight,
       orbBottomPadding: orbBottomPadding,
     );
@@ -168,19 +601,22 @@ class HomeWelcomeLayoutMetrics {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+`home_welcome_view.dart`: `LayoutBuilder` → metrics → `Column` with spacers, `SizedBox(height: orbHeight)` placeholder (`ColoredBox` or empty `SizedBox` with `Key('homeOrbSlot')`), greeting (GoogleFonts spaceMono / monospaced, 28 semibold), encryption lines.
 
-Run: `cd opencore_flutterians && flutter test test/home/home_welcome_layout_metrics_test.dart`
+`home_view.dart`: white scaffold body `Column`: top bar (`Icons.menu` / `Icons.add` via `HomePressable`), `Expanded(child: HomeWelcomeView())`. Composer/rail come in Task 4 — leave bottom empty for now **or** include empty `SizedBox` reserved area.
 
-Expected: PASS
+Update tab shell Home page to `const HomeView()`.
+
+- [ ] **Step 4: Run tests — expect PASS**
+
+Run: `cd opencore_flutterians && flutter test test/home/home_welcome_view_test.dart test/home/home_facade_test.dart`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add opencore_flutterians/lib/home/home_welcome_layout_metrics.dart \
-  opencore_flutterians/test/home/home_welcome_layout_metrics_test.dart
+git add opencore_flutterians/lib/home/views opencore_flutterians/test/home/home_welcome_view_test.dart
 git commit -m "$(cat <<'EOF'
-Add home welcome layout metrics with compact fallback.
+Add home welcome chrome with greeting copy.
 
 EOF
 )"
@@ -188,143 +624,16 @@ EOF
 
 ---
 
-### Task 2: Home tokens and theme
+### Task 4: Composer + model rail
 
 **Files:**
-- Create: `opencore_flutterians/lib/home/home_tokens.dart`
-- Create: `opencore_flutterians/lib/home/home_theme.dart`
-- Test: `opencore_flutterians/test/home/home_theme_test.dart`
+- Create: `lib/home/views/home_composer_view.dart`
+- Create: `lib/home/views/home_model_rail.dart`
+- Modify: `lib/home/views/home_view.dart`
+- Test: `test/home/home_composer_test.dart`
 
 **Interfaces:**
-- Produces: `HomeTokens.light` colors; `HomeTheme.light()`; `HomeThemeColors.of(context)`
-
-- [ ] **Step 1: Write the failing test**
-
-```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:opencore_flutterians/home/home_theme.dart';
-import 'package:opencore_flutterians/home/home_tokens.dart';
-
-void main() {
-  testWidgets('HomeThemeColors exposes light surface and primary text', (tester) async {
-    late HomeColorTokens colors;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: HomeTheme.light(),
-        home: Builder(
-          builder: (context) {
-            colors = HomeThemeColors.of(context).colors;
-            return const SizedBox();
-          },
-        ),
-      ),
-    );
-    expect(colors.surface, HomeTokens.light.surface);
-    expect(colors.textPrimary, HomeTokens.light.textPrimary);
-    expect(ThemeData.estimateBrightnessForColor(colors.surface), Brightness.light);
-  });
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd opencore_flutterians && flutter test test/home/home_theme_test.dart`
-
-Expected: FAIL
-
-- [ ] **Step 3: Write minimal implementation**
-
-`home_tokens.dart`:
-
-```dart
-import 'package:flutter/material.dart';
-
-class HomeColorTokens {
-  const HomeColorTokens({
-    required this.surface,
-    required this.textPrimary,
-    required this.textSecondary,
-    required this.accent,
-  });
-
-  final Color surface;
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color accent;
-}
-
-class HomeTokens {
-  static const pressScale = 0.97;
-  static const durationPress = Duration(milliseconds: 160);
-  static const durationStage = Duration(milliseconds: 220);
-  static const stageStagger = Duration(milliseconds: 55);
-  static const easeOut = Cubic(0.23, 1, 0.32, 1);
-  static const easeInOut = Cubic(0.77, 0, 0.175, 1);
-
-  static const light = HomeColorTokens(
-    surface: Color(0xFFFFFFFF),
-    textPrimary: Color(0xFF1A1A1A),
-    textSecondary: Color(0xFF666666),
-    accent: Color(0xFF111111),
-  );
-}
-```
-
-`home_theme.dart`: Build `ThemeData` with white scaffold, Space Mono / Space Grotesk via `google_fonts` for greeting styles (`headlineMedium` monospaced ~28 semibold, `bodySmall` ~11 secondary). Provide:
-
-```dart
-class HomeThemeColors extends InheritedWidget {
-  const HomeThemeColors({super.key, required this.colors, required super.child});
-  final HomeColorTokens colors;
-  static HomeThemeColors of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<HomeThemeColors>()!;
-  @override
-  bool updateShouldNotify(HomeThemeColors old) => colors != old.colors;
-}
-
-class HomeTheme {
-  static ThemeData light() { /* ThemeData + wrap usage via HomePage */ }
-}
-```
-
-Also export a helper widget or document that `HomePage` wraps children in `HomeThemeColors(colors: HomeTokens.light, child: …)` and `Theme(data: HomeTheme.light(), child: …)`.
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `cd opencore_flutterians && flutter test test/home/home_theme_test.dart`
-
-Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add opencore_flutterians/lib/home/home_tokens.dart \
-  opencore_flutterians/lib/home/home_theme.dart \
-  opencore_flutterians/test/home/home_theme_test.dart
-git commit -m "$(cat <<'EOF'
-Add light home tokens and theme for welcome shell.
-
-EOF
-)"
-```
-
----
-
-### Task 3: Top bar + welcome shell + HomePage wired
-
-**Files:**
-- Create: `opencore_flutterians/lib/home/home_top_bar.dart`
-- Create: `opencore_flutterians/lib/home/home_welcome_view.dart`
-- Create: `opencore_flutterians/lib/home/home_page.dart`
-- Create: `opencore_flutterians/lib/home/home.dart`
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_view.dart` (stub placeholder only)
-- Modify: `opencore_flutterians/lib/main.dart`
-- Test: `opencore_flutterians/test/home/home_page_test.dart`
-
-**Interfaces:**
-- Produces: `HomePage`, `HomeTopBar`, `HomeWelcomeView`, stub `HomeOrbView({Key? key, required double height})`
-- Consumes: `HomeWelcomeLayoutMetrics`, `HomeTheme`, `HomeTokens`
+- Produces: visual composer + model/Max/0 chips; local `TextEditingController` only
 
 - [ ] **Step 1: Write the failing test**
 
@@ -333,105 +642,71 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:opencore_flutterians/home/home.dart';
+import 'package:opencore_flutterians/home/views/home_view.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  testWidgets('HomePage shows greeting and top bar icons', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(390, 844));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(const MaterialApp(home: HomePage()));
-    await tester.pump();
-
-    expect(find.text('Hi! How can I help you?'), findsOneWidget);
-    expect(find.textContaining('end-to-end encrypted'), findsOneWidget);
-    expect(find.textContaining('Your data is safe'), findsOneWidget);
-    expect(find.byIcon(Icons.menu), findsOneWidget);
-    expect(find.byIcon(Icons.add), findsOneWidget);
-  });
-
-  testWidgets('HomePage does not overflow on narrow phone', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(320, 568));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(const MaterialApp(home: HomePage()));
-    await tester.pump();
-    expect(tester.takeException(), isNull);
-  });
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd opencore_flutterians && flutter test test/home/home_page_test.dart`
-
-Expected: FAIL
-
-- [ ] **Step 3: Write minimal implementation**
-
-Stub `HomeOrbView`:
-
-```dart
-class HomeOrbView extends StatelessWidget {
-  const HomeOrbView({super.key, required this.height});
-  final double height;
-  @override
-  Widget build(BuildContext context) => SizedBox(height: height, width: double.infinity);
-}
-```
-
-`HomeTopBar`: `SafeArea` + `Padding` horizontal from width (clamp 16–24); two `IconButton`s (menu, add) with min 44×44; wrap icons in a small press scale using `GestureDetector`/`InkWell` + `AnimatedScale` to `HomeTokens.pressScale` on tap down / up (160ms `HomeTokens.easeOut`). No real navigation.
-
-`HomeWelcomeView`: `LayoutBuilder` → `HomeWelcomeLayoutMetrics.resolve(constraints.maxHeight)` → column with spacers, `HomeOrbView(height: layout.orbHeight)`, greeting `FittedBox`/`Text` monospaced 28 semibold, two secondary lines matching Swift copy:
-- `Chats are end-to-end encrypted.`
-- `Your data is safe.`
-
-`HomePage`:
-
-```dart
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: HomeTheme.light(),
-      child: HomeThemeColors(
-        colors: HomeTokens.light,
-        child: Scaffold(
-          backgroundColor: HomeTokens.light.surface,
-          body: const Column(
-            children: [
-              HomeTopBar(),
-              Expanded(child: HomeWelcomeView()),
-            ],
-          ),
-        ),
+  testWidgets('composer and model rail render', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HomeTheme.light(),
+        home: const Scaffold(body: HomeView()),
       ),
     );
-  }
+    await tester.pump();
+
+    expect(find.text(HomeTokens.composerHint), findsOneWidget);
+    expect(find.textContaining('Gemma'), findsOneWidget);
+    expect(find.text(HomeTokens.speedTitle), findsOneWidget);
+    expect(find.text(HomeTokens.contextLabel), findsOneWidget);
+  });
 }
 ```
 
-`home.dart` exports public types. In `main.dart` replace `OpenCoreHomePage` with `HomePage` and remove the unused counter page (or leave unused class deleted).
+- [ ] **Step 2: Run — expect FAIL**
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 3: Implement composer + rail; attach under welcome in `HomeView`**
 
-Run: `cd opencore_flutterians && flutter test test/home/home_page_test.dart`
+Layout for `HomeView` body:
 
-Expected: PASS
+```dart
+Column(
+  children: [
+    topBar,
+    Expanded(child: HomeWelcomeView()),
+    Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        children: [
+          HomeComposerView(controller: _draft),
+          const SizedBox(height: 10),
+          const HomeModelRail(),
+        ],
+      ),
+    ),
+  ],
+)
+```
 
-Also run: `cd opencore_flutterians && flutter test`
+Composer: rounded container (`HomeTokens.radiusComposer`), `TextField` with hint, bottom row `+` / mic / send circle. All actions no-op. Use `HomePressable` on icon buttons.
 
-Expected: existing onboarding tests still PASS
+Model rail: `Row` with expanded model chip, Max chip, circular `0`.
+
+- [ ] **Step 4: Run tests — PASS**
+
+Run: `cd opencore_flutterians && flutter test test/home/home_composer_test.dart`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add opencore_flutterians/lib/home opencore_flutterians/lib/main.dart \
-  opencore_flutterians/test/home/home_page_test.dart
+git add opencore_flutterians/lib/home/views/home_composer_view.dart \
+  opencore_flutterians/lib/home/views/home_model_rail.dart \
+  opencore_flutterians/lib/home/views/home_view.dart \
+  opencore_flutterians/test/home/home_composer_test.dart
 git commit -m "$(cat <<'EOF'
-Wire home welcome shell as post-onboarding destination.
+Add home composer chrome and model rail.
 
 EOF
 )"
@@ -439,60 +714,46 @@ EOF
 
 ---
 
-### Task 4: Orb math and metrics
+### Task 5: `home_orb` math
 
 **Files:**
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_metrics.dart`
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_math.dart`
-- Test: `opencore_flutterians/test/home/home_orb_math_test.dart`
+- Create: `lib/home/home_orb/home_orb_math.dart`
+- Test: `test/home/home_orb/home_orb_math_test.dart`
 
 **Interfaces:**
-- Produces: `HomeOrbMetrics` constants; `HomeOrbMath.noise`, `HomeOrbMath.gaussian2D`
+- Produces: `HomeOrbMath.noise(double value, double seed) → double` in `[0,1)`
+- Produces: `HomeOrbMath.gaussian2D({x,y,sigmaX,sigmaY}) → double`
 
 - [ ] **Step 1: Write the failing test**
 
 ```dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencore_flutterians/home/home_orb/home_orb_math.dart';
-import 'package:opencore_flutterians/home/home_orb/home_orb_metrics.dart';
 
 void main() {
-  test('noise is deterministic and in 0..1', () {
+  test('noise is deterministic and in unit range', () {
     final a = HomeOrbMath.noise(12, 3);
     final b = HomeOrbMath.noise(12, 3);
     expect(a, b);
-    expect(a, inInclusiveRange(0.0, 1.0));
+    expect(a, greaterThanOrEqualTo(0));
+    expect(a, lessThan(1));
   });
 
-  test('metrics match Swift canvas', () {
-    expect(HomeOrbMetrics.canvasSize, const Size(360, 240));
-    expect(HomeOrbMetrics.glyphRamp, ['░', '▒', '▓', '█']);
+  test('gaussian2D peaks at origin', () {
+    final peak = HomeOrbMath.gaussian2D(x: 0, y: 0, sigmaX: 0.3, sigmaY: 0.3);
+    final side = HomeOrbMath.gaussian2D(x: 1, y: 1, sigmaX: 0.3, sigmaY: 0.3);
+    expect(peak, greaterThan(side));
+    expect(peak, closeTo(1.0, 1e-9));
   });
 }
 ```
 
-(Import `Size` from `dart:ui` or `package:flutter/material.dart`.)
+- [ ] **Step 2: Run — FAIL**
 
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_math_test.dart`
-
-Expected: FAIL
-
-- [ ] **Step 3: Write minimal implementation**
-
-Port `ParticleOrbMetrics` and `ParticleOrbMath` from Swift verbatim (same formulas).
+- [ ] **Step 3: Implement**
 
 ```dart
-class HomeOrbMetrics {
-  static const canvasSize = Size(360, 240);
-  static final center = Offset(canvasSize.width * 0.5, canvasSize.height * 0.5);
-  static const outerField = Size(324, 204);
-  static const coreField = Size(156, 146);
-  static const renderScale = 2.0;
-  static const snapGrid = 3.0;
-  static const glyphRamp = ['░', '▒', '▓', '█'];
-}
+import 'dart:math' as math;
 
 class HomeOrbMath {
   static double noise(double value, double seed) {
@@ -505,25 +766,21 @@ class HomeOrbMath {
     required double y,
     required double sigmaX,
     required double sigmaY,
-  }) =>
-      math.exp(-0.5 * (math.pow(x / sigmaX, 2) + math.pow(y / sigmaY, 2)));
+  }) {
+    return math.exp(-0.5 * (math.pow(x / sigmaX, 2) + math.pow(y / sigmaY, 2)));
+  }
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_math_test.dart`
-
-Expected: PASS
+- [ ] **Step 4: Run — PASS**
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add opencore_flutterians/lib/home/home_orb/home_orb_metrics.dart \
-  opencore_flutterians/lib/home/home_orb/home_orb_math.dart \
-  opencore_flutterians/test/home/home_orb_math_test.dart
+git add opencore_flutterians/lib/home/home_orb/home_orb_math.dart \
+  opencore_flutterians/test/home/home_orb/home_orb_math_test.dart
 git commit -m "$(cat <<'EOF'
-Port home orb metrics and deterministic noise helpers.
+Add home_orb deterministic math helpers.
 
 EOF
 )"
@@ -531,73 +788,79 @@ EOF
 
 ---
 
-### Task 5: Orb layout factory
+### Task 6: `home_orb` metrics + layout factories
 
 **Files:**
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_layout.dart`
-- Test: `opencore_flutterians/test/home/home_orb_layout_test.dart`
+- Create: `lib/home/home_orb/home_orb_metrics.dart`
+- Create: `lib/home/home_orb/home_orb_layout.dart`
+- Test: `test/home/home_orb/home_orb_layout_test.dart`
 
 **Interfaces:**
-- Consumes: `HomeOrbMath`, `HomeOrbMetrics`
-- Produces: particle model classes + `HomeOrbLayout` static makers matching Swift counts:
-  - `makeOuterDots(seedOffset, count, radiusBias)`
-  - `makeOrbDust(seedOffset, count)`
-  - `makePulseDots(seedOffset, count)`
-  - `makeCoreBlocks(seedOffset, count, prominence)`
-  - `makeSparkSeeds(seedOffset, count)`
-  - `makeOuterOrbitDotSeeds(seedOffset, count)`
+- Produces particle model types: `HomeOrbDot`, `HomeOrbBlock`, `HomeOrbOrbitDotSeed`, `HomeOrbSparkSeed`
+- Produces layout factories matching Swift counts
+
+Port layout methods **verbatim** from Swift `ParticleOrbLayoutFactory` (already captured in brainstorming / `/tmp/HomeParticleOrbView.swift`). Include `coreDensity` and `snap`.
 
 - [ ] **Step 1: Write the failing test**
 
 ```dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencore_flutterians/home/home_orb/home_orb_layout.dart';
+import 'package:opencore_flutterians/home/home_orb/home_orb_metrics.dart';
 
 void main() {
-  test('core blocks are deterministic and non-empty', () {
-    final a = HomeOrbLayout.makeCoreBlocks(seedOffset: 2400, count: 236, prominence: 0.96);
-    final b = HomeOrbLayout.makeCoreBlocks(seedOffset: 2400, count: 236, prominence: 0.96);
-    expect(a.length, greaterThan(0));
-    expect(a.length, b.length);
-    expect(a.first.point, b.first.point);
-    expect(a.first.glyph, isIn(['░', '▒', '▓', '█']));
-  });
-
-  test('outer dots respect requested count', () {
-    final dots = HomeOrbLayout.makeOuterDots(seedOffset: 0, count: 138, radiusBias: 0.72);
-    expect(dots, hasLength(138));
-  });
-
-  test('spark and orbit seed counts match Swift pack', () {
-    expect(HomeOrbLayout.makeSparkSeeds(seedOffset: 11200, count: 28), hasLength(28));
+  test('layout factories return Swift particle counts', () {
+    expect(HomeOrbLayout.makeOuterDots(seedOffset: 0, count: 138, radiusBias: 0.72), hasLength(138));
+    expect(HomeOrbLayout.makeOuterDots(seedOffset: 1200, count: 126, radiusBias: 0.66), hasLength(126));
+    expect(HomeOrbLayout.makePulseDots(seedOffset: 1800, count: 86), hasLength(86));
+    expect(HomeOrbLayout.makeOrbDust(seedOffset: 9600, count: 132), hasLength(132));
+    expect(HomeOrbLayout.makeCoreBlocks(seedOffset: 2400, count: 236, prominence: 0.96), hasLength(236));
+    expect(HomeOrbLayout.makeCoreBlocks(seedOffset: 4800, count: 220, prominence: 0.78), hasLength(220));
+    expect(HomeOrbLayout.makeCoreBlocks(seedOffset: 7200, count: 158, prominence: 0.58), hasLength(158));
     expect(HomeOrbLayout.makeOuterOrbitDotSeeds(seedOffset: 12800, count: 42), hasLength(42));
+    expect(HomeOrbLayout.makeSparkSeeds(seedOffset: 11200, count: 28), hasLength(28));
+  });
+
+  test('metrics match Swift canvas', () {
+    expect(HomeOrbMetrics.canvasSize, const Size(360, 240));
+    expect(HomeOrbMetrics.glyphRamp, ['░', '▒', '▓', '█']);
   });
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+Add `import 'package:flutter/material.dart';` for `Size`.
 
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_layout_test.dart`
+- [ ] **Step 2: Run — FAIL**
 
-Expected: FAIL
+- [ ] **Step 3: Implement metrics + full layout port**
 
-- [ ] **Step 3: Write minimal implementation**
+`home_orb_metrics.dart`:
 
-Port Swift `ParticleOrbLayoutFactory` and particle structs into `home_orb_layout.dart` as `HomeOrbLayout` + `HomeOrbDot` / `HomeOrbBlock` / `HomeOrbSparkSeed` / `HomeOrbOrbitDotSeed`. Keep formulas identical (including `coreDensity` and `snap`).
+```dart
+import 'dart:ui';
 
-- [ ] **Step 4: Run test to verify it passes**
+class HomeOrbMetrics {
+  static const canvasSize = Size(360, 240);
+  static const center = Offset(180, 120);
+  static const outerField = Size(324, 204);
+  static const coreField = Size(156, 146);
+  static const renderScale = 2.0;
+  static const snapGrid = 3.0;
+  static const glyphRamp = ['░', '▒', '▓', '█'];
+}
+```
 
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_layout_test.dart`
+Implement `home_orb_layout.dart` by translating the Swift factory methods line-for-line (use `Offset` instead of `CGPoint`, `double` throughout). Put seed/dot/block classes in the same file or in `home_orb_layer_pack.dart` if preferred — keep types accessible to baker.
 
-Expected: PASS
+- [ ] **Step 4: Run — PASS**
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add opencore_flutterians/lib/home/home_orb/home_orb_layout.dart \
-  opencore_flutterians/test/home/home_orb_layout_test.dart
+git add opencore_flutterians/lib/home/home_orb \
+  opencore_flutterians/test/home/home_orb/home_orb_layout_test.dart
 git commit -m "$(cat <<'EOF'
-Port deterministic home orb particle layout factory.
+Port home_orb particle layout factories from Swift.
 
 EOF
 )"
@@ -605,101 +868,106 @@ EOF
 
 ---
 
-### Task 6: Orb renderer and asset pack with staged bake
+### Task 7: Layer pack + baker
 
 **Files:**
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_renderer.dart`
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_asset_pack.dart`
-- Create: `opencore_flutterians/lib/home/home_orb/home_orb_stage.dart`
-- Test: `opencore_flutterians/test/home/home_orb_asset_pack_test.dart`
+- Create: `lib/home/home_orb/home_orb_layer_pack.dart`
+- Create: `lib/home/home_orb/home_orb_baker.dart`
+- Test: `test/home/home_orb/home_orb_baker_test.dart`
 
 **Interfaces:**
-- Produces:
-  - `enum HomeOrbStage { corePrimary, coreRest, mid, outer, orbit }` with ordered `values`
-  - `HomeOrbColors({required Color tint, required Color accent})`
-  - `HomeOrbAssetPack` holding layer images + orbit/spark descriptors
-  - `HomeOrbAssetStore.bakeStage(HomeOrbStage stage, HomeOrbColors colors)` / `bakeAll` / cache by colors
-  - Layer descriptors include rest opacity/scale, ranges, durations, phase, crispEdges, drift — match Swift `ParticleOrbAssetFactory.makePack` numbers
+- Produces: `HomeOrbLayerPack` with `layers` (7), `outerOrbitDots` (42), `sparks` (28)
+- Produces: `Future<HomeOrbLayerPack> HomeOrbBaker.bake({required Color tint, required Color accent})`
+- Layer descriptor fields match Swift table (opacity/scale/rotation/drift + `ui.Image image`)
+
+**Optimization:** bake pixel buffers with `PictureRecorder` at `canvasSize * devicePixelRatio` (use `2.0` min like Swift `renderScale`). Cache:
+
+```dart
+class HomeOrbBakeCache {
+  static HomeOrbLayerPack? _pack;
+  static int? _key;
+  static Future<HomeOrbLayerPack> obtain({required Color tint, required Color accent}) async {
+    final key = Object.hash(tint.toARGB32(), accent.toARGB32());
+    if (_pack != null && _key == key) return _pack!;
+    final pack = await HomeOrbBaker.bake(tint: tint, accent: accent);
+    _pack = pack;
+    _key = key;
+    return pack;
+  }
+
+  @visibleForTesting
+  static void clear() {
+    _pack = null;
+    _key = null;
+  }
+}
+```
+
+If `toARGB32` unavailable on SDK, use `tint.value`.
+
+Seven layer specs (exact):
+
+1. outer 138 — tint — op 0.36±0.05/6.8 — scale 1±0.018/8.4 — rot 0.09/21 — phase 0 — drift 5/0.72/16  
+2. outer 126 — tint — 0.28±0.05/7.6 — 0.98±0.022/9.2 — 0.07/17.5 — 1.9 — 7/0.56/19  
+3. pulse 86 — tint — 0.20±0.10/5.2 — 0.78±0.12/5.8 — 0.04/13 — 0.4 — 2/0.70/11  
+4. core 236 p0.96 — accent — 0.78±0.10/5.8 — 1±0.028/6.6 — 0.10/12 — 0.8 — crisp — 4/0.74/8.5  
+5. core 220 p0.78 — accent — 0.52±0.09/6.4 — 1.02±0.024/6.1 — 0.14/9.8 — 2.2 — crisp — 5/0.68/7.8  
+6. core 158 p0.58 — accent — 0.30±0.06/6.4 — 1.04±0.018/6.1 — 0.18/7.4 — 3.1 — crisp — 6/0.64/6.9  
+7. dust 132 — tint — 0.30±0.08/4.4 — 1.01±0.032/5.6 — 0.12/10.6 — 1.5 — 8/0.62/12.4  
 
 - [ ] **Step 1: Write the failing test**
 
 ```dart
-import 'dart:ui' as ui;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencore_flutterians/home/home_orb/home_orb_asset_pack.dart';
-import 'package:opencore_flutterians/home/home_orb/home_orb_stage.dart';
-import 'package:opencore_flutterians/home/home_tokens.dart';
+import 'package:opencore_flutterians/home/home_orb/home_orb_baker.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final colors = HomeOrbColors(
-    tint: HomeTokens.light.textPrimary,
-    accent: HomeTokens.light.accent,
-  );
+  tearDown(HomeOrbBakeCache.clear);
 
-  test('stage order starts with core', () {
-    expect(HomeOrbStage.values.first, HomeOrbStage.corePrimary);
-    expect(HomeOrbStage.values.last, HomeOrbStage.orbit);
-  });
-
-  test('baking corePrimary yields a non-zero image', () async {
-    final slice = await HomeOrbAssetStore.bakeStage(HomeOrbStage.corePrimary, colors);
-    expect(slice.layers, isNotEmpty);
-    final img = slice.layers.first.image;
-    expect(img.width, greaterThan(0));
-    expect(img.height, greaterThan(0));
-  });
-
-  test('bakeAll caches by color', () async {
-    final a = await HomeOrbAssetStore.bakeAll(colors);
-    final b = await HomeOrbAssetStore.bakeAll(colors);
-    expect(identical(a, b), isTrue);
-    expect(a.layers.length, greaterThanOrEqualTo(7));
-    expect(a.outerOrbitDots.length, 42);
-    expect(a.sparks.length, 28);
+  test('bake produces 7 layers, 42 orbit dots, 28 sparks', () async {
+    final pack = await HomeOrbBaker.bake(
+      tint: const Color(0xFF141414),
+      accent: const Color(0xFF2B2B2B),
+    );
+    expect(pack.layers, hasLength(7));
+    expect(pack.outerOrbitDots, hasLength(42));
+    expect(pack.sparks, hasLength(28));
+    for (final layer in pack.layers) {
+      expect(layer.image.width, greaterThan(0));
+      expect(layer.image.height, greaterThan(0));
+    }
   });
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: Run — FAIL**
 
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_asset_pack_test.dart`
+- [ ] **Step 3: Implement baker**
 
-Expected: FAIL
+Bake helpers:
 
-- [ ] **Step 3: Write minimal implementation**
+- `renderDots` — fill circles  
+- `renderBlocks` — draw glyph strings with monospace `ParagraphBuilder` / `TextPainter`  
+- `renderOrbitDot` — 10×10 soft circle  
+- `renderSpark` — 18×18 glyph  
 
-Renderer: use `PictureRecorder` + `Canvas` at `HomeOrbMetrics.canvasSize * devicePixelRatio` (use `HomeOrbMetrics.renderScale` floor). Draw ellipses for dots; draw monospaced glyphs for blocks/sparks (`TextPainter` with `fontFamily: 'Courier'` or `GoogleFonts.spaceMono` — prefer a bundled-safe monospace that works in tests without network; with `allowRuntimeFetching = false`, use `fontFamily: 'monospace'` / platform monospace).
+Dispose images only when replacing cache.
 
-`HomeOrbAssetStore`:
-- Map stages to which Swift layers they include:
-  - `corePrimary`: first core blocks layer (seed 2400)
-  - `coreRest`: remaining two core layers
-  - `mid`: pulse + dust
-  - `outer`: two outer dot layers
-  - `orbit`: orbit dots + sparks
-- `bakeStage` can return a partial pack slice; `bakeAll` builds full pack matching Swift factory descriptors exactly (opacities, durations, drift radii from Swift lines ~496–666).
-- Cache `Map<String, HomeOrbAssetPack>` keyed by tint/accent ARGB.
+Prefer baking on the main isolate first for correctness in tests; wrap heavy work in `compute` only if isolate transfer of `ui.Image` is awkward — acceptable optimization path: generate particle lists in isolate, rasterize on UI isolate. Document chosen approach in code comment.
 
-Dispose: document that cached images live for app lifetime; optional `clearCache()` for tests.
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_asset_pack_test.dart`
-
-Expected: PASS
+- [ ] **Step 4: Run — PASS**
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add opencore_flutterians/lib/home/home_orb/home_orb_renderer.dart \
-  opencore_flutterians/lib/home/home_orb/home_orb_asset_pack.dart \
-  opencore_flutterians/lib/home/home_orb/home_orb_stage.dart \
-  opencore_flutterians/test/home/home_orb_asset_pack_test.dart
+git add opencore_flutterians/lib/home/home_orb \
+  opencore_flutterians/test/home/home_orb/home_orb_baker_test.dart
 git commit -m "$(cat <<'EOF'
-Add staged home orb image bake and asset pack cache.
+Add home_orb layer bake pipeline and cache.
 
 EOF
 )"
@@ -707,99 +975,211 @@ EOF
 
 ---
 
-### Task 7: HomeOrbView progressive reveal + motion
+### Task 8: `home_orb` animator + view
 
 **Files:**
-- Replace stub: `opencore_flutterians/lib/home/home_orb/home_orb_view.dart`
-- Test: `opencore_flutterians/test/home/home_orb_view_test.dart`
-- Modify: ensure `home.dart` exports `HomeOrbView`
+- Create: `lib/home/home_orb/home_orb_animator.dart`
+- Create: `lib/home/home_orb/home_orb_view.dart`
+- Test: `test/home/home_orb/home_orb_view_test.dart`
 
 **Interfaces:**
-- Consumes: `HomeOrbAssetStore`, `HomeOrbStage`, `HomeTokens`, `HomeThemeColors`
-- Produces: `HomeOrbView({Key? key, required double height})` — StatefulWidget
+- Produces: `HomeOrbView({bool animate})` widget
+- Animator samples drift/orbit/opacity/scale given `elapsed` + descriptor (pure functions preferred for testability)
 
 - [ ] **Step 1: Write the failing test**
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencore_flutterians/home/home_orb/home_orb_view.dart';
+import 'package:opencore_flutterians/home/home_theme.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('orb builds and respects reduce motion', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HomeTheme.light(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: const Scaffold(
+          body: SizedBox(height: 260, child: HomeOrbView()),
+        ),
+      ),
+    );
+    await tester.pump();
+    // Allow bake future
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomeOrbView), findsOneWidget);
+  });
+}
+```
+
+- [ ] **Step 2: Run — FAIL**
+
+- [ ] **Step 3: Implement animator + view**
+
+`HomeOrbView` responsibilities:
+
+1. Read tint/accent from `HomeColors.of(context)`  
+2. `HomeOrbBakeCache.obtain` in `initState` / didChangeDependencies  
+3. While loading: empty `SizedBox`  
+4. When ready: `RepaintBoundary` → `Stack` of 7 `RawImage` layers + orbit dots + sparks  
+5. Single `AnimationController(duration: ~20s)..repeat()` driving rebuilds **only inside** the orb subtree  
+6. If `MediaQuery.disableAnimations` or `widget.active == false`: freeze at rest poses  
+7. `WidgetsBindingObserver` → pause when app not resumed  
+8. Fit canvas 360×240 into parent with `FittedBox` / manual scale like Swift `min(xScale,yScale)`
+
+Animate using elapsed seconds from controller; implement Swift keyframe curves for opacity/scale (values at 0, 0.26–0.28, 0.52–0.56, 0.78–0.80, 1.0) and paced elliptical drift/orbit.
+
+- [ ] **Step 4: Run — PASS**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add opencore_flutterians/lib/home/home_orb \
+  opencore_flutterians/test/home/home_orb/home_orb_view_test.dart
+git commit -m "$(cat <<'EOF'
+Add animated home_orb view with reduce-motion pause.
+
+EOF
+)"
+```
+
+---
+
+### Task 9: Integrate orb into welcome + tab visibility
+
+**Files:**
+- Modify: `lib/home/views/home_welcome_view.dart`
+- Modify: `lib/home/views/home_tab_shell.dart` (pass `active` / pause orb off-tab)
+- Test: `test/home/home_welcome_view_test.dart` (extend)
+
+**Interfaces:**
+- `HomeOrbView(active: homeTabSelected && appResumed)`
+
+- [ ] **Step 1: Extend welcome test**
+
+```dart
+expect(find.byKey(const Key('homeOrbSlot')), findsOneWidget);
+// after integration, slot contains HomeOrbView:
+expect(find.byType(HomeOrbView), findsOneWidget);
+```
+
+Import `home_orb_view.dart`. Disable animations in harness.
+
+- [ ] **Step 2: Run — FAIL on `HomeOrbView` until wired**
+
+- [ ] **Step 3: Replace placeholder with `HomeOrbView`; keep bake cache across tab switches via `IndexedStack` + `active` flag**
+
+In tab shell:
+
+```dart
+HomeView(orbActive: _index == 0),
+```
+
+Thread `orbActive` to welcome → orb.
+
+- [ ] **Step 4: Run home widget tests — PASS**
+
+Run: `cd opencore_flutterians && flutter test test/home`
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add opencore_flutterians/lib/home opencore_flutterians/test/home
+git commit -m "$(cat <<'EOF'
+Integrate home_orb into welcome and pause off-tab.
+
+EOF
+)"
+```
+
+---
+
+### Task 10: Wire post-onboarding root + smoke
+
+**Files:**
+- Modify: `lib/main.dart`
+- Delete: unused `OpenCoreHomePage` counter if fully replaced
+- Test: `test/home/home_bootstrap_smoke_test.dart`
+
+**Interfaces:**
+- `OnboardingFacade().buildRoot(home: HomeFacade().buildRoot())`
+
+- [ ] **Step 1: Write smoke test**
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:opencore_flutterians/home/home_orb/home_orb_view.dart';
-import 'package:opencore_flutterians/home/home_theme.dart';
-import 'package:opencore_flutterians/home/home_tokens.dart';
+import 'package:opencore_flutterians/home/home.dart';
+import 'package:opencore_flutterians/onboarding/onboarding.dart';
+
+import '../helpers/hydrated_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
+  setUp(setUpHydratedStorage);
 
-  testWidgets('HomeOrbView mounts and completes staged bake without throwing', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: HomeTheme.light(),
-        home: HomeThemeColors(
-          colors: HomeTokens.light,
-          child: const Scaffold(
-            body: Center(child: HomeOrbView(height: 260)),
-          ),
-        ),
-      ),
-    );
-
-    await tester.pump();
-    // Allow progressive stages to complete.
-    for (var i = 0; i < 20; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(tester.takeException(), isNull);
-    expect(find.byType(HomeOrbView), findsOneWidget);
-  });
-
-  testWidgets('reduce motion still shows orb without continuous controllers crashing', (tester) async {
+  testWidgets('completed onboarding shows home shell', (tester) async {
+    final store = _DoneStore();
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(disableAnimations: true),
           child: child!,
         ),
-        theme: HomeTheme.light(),
-        home: HomeThemeColors(
-          colors: HomeTokens.light,
-          child: const Scaffold(body: HomeOrbView(height: 200)),
+        home: OnboardingFacade(store: store).buildRoot(
+          home: HomeFacade().buildRoot(),
         ),
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    expect(find.text(HomeTokens.greeting), findsOneWidget);
+    expect(find.byKey(const Key('homeStickyTabBar')), findsOneWidget);
   });
+}
+
+class _DoneStore implements OnboardingCompletionStore {
+  @override
+  Future<bool> hasCompleted() async => true;
+  @override
+  Future<void> markCompleted() async {}
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+If `OnboardingFacade` constructor / store API differs, match `onboarding_facade.dart` exactly.
 
-Run: `cd opencore_flutterians && flutter test test/home/home_orb_view_test.dart`
+- [ ] **Step 2: Run — FAIL until main wiring exists (smoke can pass before main if it constructs facade directly); still update main**
 
-Expected: FAIL (stub has no bake / or incomplete)
+- [ ] **Step 3: Update `main.dart`**
 
-- [ ] **Step 3: Write minimal implementation**
+```dart
+import 'package:opencore_flutterians/home/home.dart';
+// ...
+home: OnboardingFacade().buildRoot(
+  home: HomeFacade().buildRoot(),
+),
+```
 
-`HomeOrbView` state machine:
+Remove `OpenCoreHomePage` class from `main.dart`.
 
-1. On init / color change: start baking stages in order (`corePrimary` first on microtask; subsequent stages after previous completes — prefer `compute`/`Isolate.run` for heavy canvas work if UI janks; otherwise async chunking is acceptable if stages remain progressive).
-2. As each stage’s images arrive, insert corresponding `RawImage`/`CustomPaint` layer widgets into a `Stack`, wrapping each new stage in `TweenAnimationBuilder` or `AnimationController` that animates opacity 0→rest and scale 0.95→restScale with `HomeTokens.easeOut` / `durationStage`, staggered by `stageStagger`.
-3. After `HomeOrbStage.orbit` is visible, start a looping master `AnimationController` (duration ~20s or multiple controllers) that drives drift/orbit/opacity/scale using the descriptor keyframes (sample positions from descriptor orbit/drift point functions). **Only** apply `Transform.translate` / `Transform.rotate` / `Transform.scale` / `Opacity` on pre-baked images.
-4. If `MediaQuery.disableAnimations` or `TickerMode` off: skip looping controllers; still show baked layers (snap or opacity-only stage-in).
-5. Aspect: child sized to `height` with width `height * (360/240)` capped by parent; center in box.
-6. Bake failure: show a small dark circle placeholder; `debugPrint` error.
-
-Do **not** CustomPaint individual particles each frame.
-
-- [ ] **Step 4: Run tests**
+- [ ] **Step 4: Run full relevant suite**
 
 Run:
 
 ```bash
-cd opencore_flutterians && flutter test test/home/home_orb_view_test.dart test/home/home_page_test.dart
+cd opencore_flutterians && flutter test test/home test/onboarding
 ```
 
 Expected: PASS
@@ -807,10 +1187,10 @@ Expected: PASS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add opencore_flutterians/lib/home/home_orb/home_orb_view.dart \
-  opencore_flutterians/test/home/home_orb_view_test.dart
+git add opencore_flutterians/lib/main.dart \
+  opencore_flutterians/test/home/home_bootstrap_smoke_test.dart
 git commit -m "$(cat <<'EOF'
-Animate home orb with progressive core-to-outer reveal.
+Wire home facade as post-onboarding root.
 
 EOF
 )"
@@ -818,159 +1198,19 @@ EOF
 
 ---
 
-### Task 8: Onboarding layout metrics + apply responsiveness
-
-**Files:**
-- Create: `opencore_flutterians/lib/onboarding/onboarding_layout_metrics.dart`
-- Modify: `opencore_flutterians/lib/onboarding/heroes/shared/onboarding_hero_frame.dart`
-- Modify: `opencore_flutterians/lib/onboarding/widgets/onboarding_page_shell.dart`
-- Modify: `opencore_flutterians/lib/onboarding/heroes/brand_hero.dart` (and any hero with hard-coded 300/280 that overflows — at minimum frame + brand)
-- Modify: `opencore_flutterians/lib/onboarding/onboarding_entry.dart` if it needs a top-level `LayoutBuilder` to pass metrics
-- Test: `opencore_flutterians/test/onboarding/onboarding_layout_metrics_test.dart`
-- Test: extend or add `opencore_flutterians/test/onboarding/onboarding_responsive_test.dart`
-
-**Interfaces:**
-- Produces: `OnboardingLayoutMetrics.resolve({required double width, required double height})` with fields such as `heroFrameHeight`, `heroFrameMaxWidth`, `pageHorizontalPadding`, `sectionGap`, `brandHeroSize`
-
-Suggested breakpoints (shortest side / height):
-
-| Tier | When | heroFrameHeight | brandHeroSize | pageHorizontalPadding |
-| --- | --- | --- | --- | --- |
-| compact | height < 700 or width < 360 | 220 | 240 | 16 |
-| standard | default | 280 | 300 | 24 |
-| roomy | height >= 900 && width >= 400 | 320 | 320 | 28 |
-
-- [ ] **Step 1: Write the failing tests**
-
-```dart
-import 'package:flutter_test/flutter_test.dart';
-import 'package:opencore_flutterians/onboarding/onboarding_layout_metrics.dart';
-
-void main() {
-  test('compact on short viewport', () {
-    final m = OnboardingLayoutMetrics.resolve(width: 320, height: 568);
-    expect(m.heroFrameHeight, 220);
-    expect(m.pageHorizontalPadding, 16);
-  });
-
-  test('standard on common phone', () {
-    final m = OnboardingLayoutMetrics.resolve(width: 390, height: 844);
-    expect(m.heroFrameHeight, 280);
-    expect(m.pageHorizontalPadding, 24);
-  });
-}
-```
-
-Responsive widget test: pump `OnboardingEntry` at `Size(320, 568)` with `disableAnimations: true` and assert `tester.takeException() == null` and `ENTER`/`SKIP` still findable after skip path (reuse patterns from `onboarding_entry_test.dart`).
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `cd opencore_flutterians && flutter test test/onboarding/onboarding_layout_metrics_test.dart`
-
-Expected: FAIL
-
-- [ ] **Step 3: Write minimal implementation**
-
-Implement metrics. Update `OnboardingHeroFrame` to read metrics via `LayoutBuilder` or inherited `OnboardingLayoutScope`. Update `OnboardingPageShell` padding/gaps from metrics. Update `BrandHero` outer `SizedBox` to `metrics.brandHeroSize`. Keep motion tokens unchanged.
-
-Provide:
-
-```dart
-class OnboardingLayoutScope extends InheritedWidget {
-  const OnboardingLayoutScope({super.key, required this.metrics, required super.child});
-  final OnboardingLayoutMetrics metrics;
-  static OnboardingLayoutMetrics of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<OnboardingLayoutScope>()!.metrics;
-  @override
-  bool updateShouldNotify(OnboardingLayoutScope old) => metrics != old.metrics;
-}
-```
-
-Wrap onboarding pages once in `onboarding_entry.dart` with `LayoutBuilder` → `OnboardingLayoutScope`.
-
-- [ ] **Step 4: Run tests**
-
-Run:
-
-```bash
-cd opencore_flutterians && flutter test test/onboarding/
-```
-
-Expected: PASS (including prior onboarding tests)
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add opencore_flutterians/lib/onboarding opencore_flutterians/test/onboarding
-git commit -m "$(cat <<'EOF'
-Make onboarding chrome and heroes viewport-responsive.
-
-EOF
-)"
-```
-
----
-
-### Task 9: Full verification + polish pass
-
-**Files:**
-- Possibly tweak: `home_orb_view.dart`, `home_welcome_view.dart`, `home_top_bar.dart` for Emil polish only (press scale, greeting fade after core)
-- Test: ensure suite green
-
-- [ ] **Step 1: Add greeting reveal smoke assertion (optional small test)**
-
-In `home_page_test.dart`, after pumps, greeting remains visible (already covered). Manually verify press scale exists on top bar via `AnimatedScale` finder if implemented with a key `ValueKey('home-top-bar-menu')`.
-
-- [ ] **Step 2: Run full suite**
-
-```bash
-cd opencore_flutterians && flutter test
-```
-
-Expected: All PASS
-
-- [ ] **Step 3: Analyze**
-
-```bash
-cd opencore_flutterians && dart analyze lib/home lib/onboarding lib/main.dart
-```
-
-Expected: No issues
-
-- [ ] **Step 4: Commit only if polish edits were needed**
-
-```bash
-git add -u opencore_flutterians/lib/home opencore_flutterians/test/home
-git commit -m "$(cat <<'EOF'
-Polish home welcome motion and verify suite.
-
-EOF
-)"
-```
-
----
-
-## Spec coverage checklist
+## Self-review (plan vs spec)
 
 | Spec requirement | Task |
 | --- | --- |
-| Welcome shell (top bar, orb, greeting) | 3, 7 |
-| Wire as post-onboarding home | 3 |
-| Pre-rasterized layered orb | 5–7 |
-| Progressive core→outer reveal | 6–7 |
-| `home_orb/` naming + `Home` prefix | all home tasks |
-| Transform/opacity-only animation | 7 |
-| Emil polish (scale 0.95 enter, ease-out, press 0.97) | 2–3, 7, 9 |
-| Home viewport metrics | 1, 3 |
-| Onboarding viewport metrics | 8 |
-| Light monochrome theme | 2–3 |
-| Reduce-motion / pause | 7 |
-| Tests narrow + large | 3, 8, 9 |
-| No composer/tabs/API | honored by non-goals / no tasks |
+| Full visual shell | 2–4, 10 |
+| Bake-to-layers orb + counts | 5–8 |
+| `home_orb_*` naming | 5–9 |
+| Sticky tab bar | 2 |
+| Emil press/tab motion | 2, 4 |
+| Reduce-motion / lifecycle pause | 8–9 |
+| Cache across tab return | 7, 9 (`IndexedStack` + bake cache) |
+| Post-onboarding wiring | 10 |
+| UI-only / out of scope respected | all tasks |
+| Tests listed in spec | 1–10 |
 
-## Plan self-review notes
-
-- No TBD placeholders left in task steps.
-- `HomeOrbView(height:)` signature consistent across Tasks 3 and 7.
-- Asset stage enum names (`corePrimary`…`orbit`) consistent across Tasks 6–7.
-- Onboarding metrics field names introduced in Task 8 and used in the same task’s widget updates.
+No TBD placeholders. Layer timings match Swift table. Types consistently use `HomeOrb*` / `Home*` prefixes.
