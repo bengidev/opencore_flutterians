@@ -13,15 +13,19 @@ class HomeModelRail extends StatelessWidget {
     return Row(
       children: [
         Expanded(
+          flex: 3,
           child: _RailChip(
             label: HomeTokens.modelTitle,
             colors: colors,
           ),
         ),
         const SizedBox(width: 8),
-        _RailChip(
-          label: HomeTokens.speedTitle,
-          colors: colors,
+        Flexible(
+          flex: 1,
+          child: _RailChip(
+            label: HomeTokens.speedTitle,
+            colors: colors,
+          ),
         ),
         const SizedBox(width: 8),
         Container(
@@ -34,6 +38,8 @@ class HomeModelRail extends StatelessWidget {
           ),
           child: Text(
             HomeTokens.contextLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: colors.textSecondary,
               fontSize: 12,
