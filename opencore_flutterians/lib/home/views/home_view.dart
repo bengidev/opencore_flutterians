@@ -7,7 +7,9 @@ import 'home_pressable.dart';
 import 'home_welcome_view.dart';
 
 class HomeView extends StatefulWidget {
-  const HomeView({super.key});
+  const HomeView({super.key, this.orbActive = true});
+
+  final bool orbActive;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -52,7 +54,7 @@ class _HomeViewState extends State<HomeView> {
               ],
             ),
           ),
-          const Expanded(child: HomeWelcomeView()),
+          Expanded(child: HomeWelcomeView(orbActive: widget.orbActive)),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Column(
