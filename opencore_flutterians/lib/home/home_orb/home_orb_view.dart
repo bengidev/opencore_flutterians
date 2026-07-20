@@ -80,7 +80,7 @@ class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin
 
     _loadedTint = tint;
     _loadedAccent = accent;
-    _pack = null;
+    setState(() => _pack = null);
 
     HomeOrbBakeCache.obtain(tint: tint, accent: accent).then((pack) {
       if (!mounted) {

@@ -289,7 +289,7 @@ HomeOrbSparkSample homeOrbSampleSpark({
   if (!animate) {
     return HomeOrbSparkSample(
       position: descriptor.position(progress: 0),
-      opacity: 0,
+      opacity: descriptor.restOpacity,
       scale: descriptor.restScale,
     );
   }
