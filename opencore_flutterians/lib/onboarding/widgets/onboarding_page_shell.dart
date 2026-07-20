@@ -19,19 +19,54 @@ class OnboardingPageShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(height: topInset),
-          Expanded(child: Center(child: hero)),
-          const SizedBox(height: 32),
-          Text(page.headline, style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 12),
-          Text(page.body, style: theme.textTheme.bodyMedium),
-        ],
-      ),
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 420;
+        final inset = compact ? (topInset * 0.5).clamp(0.0, topInset) : topInset;
+        final gapAfterHero = compact ? 16.0 : 32.0;
+        final gapAfterHeadline = compact ? 8.0 : 12.0;
+
+        final copy = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              page.headline,
+              softWrap: true,
+              style: theme.textTheme.headlineMedium,
+            ),
+            SizedBox(height: gapAfterHeadline),
+            Text(
+              page.body,
+              softWrap: true,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        );
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(height: inset),
+              Expanded(
+                flex: compact ? 3 : 5,
+                child: Center(child: hero),
+              ),
+              SizedBox(height: gapAfterHero),
+              Flexible(
+                flex: compact ? 4 : 3,
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: copy,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

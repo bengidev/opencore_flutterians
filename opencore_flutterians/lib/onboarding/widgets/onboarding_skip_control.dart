@@ -13,7 +13,7 @@ class OnboardingSkipControl extends StatelessWidget {
       alignment: Alignment.centerRight,
       child: OnboardingTextButton(
         onPressed: onSkip,
-        child: Text('SKIP', style: Theme.of(context).textTheme.labelSmall),
+        child: const Text('SKIP'),
       ),
     );
   }

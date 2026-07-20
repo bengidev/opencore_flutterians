@@ -30,17 +30,29 @@ class OnboardingFeatureHeader extends StatelessWidget {
             index: pageIndex,
             featureCount: featureCount,
           ),
-          const Spacer(),
-          AnimatedSwitcher(
-            duration: duration,
-            switchInCurve: OnboardingTokens.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) =>
-                OnboardingMotion.fadeSlide(child, animation: animation, offsetY: 0.02),
-            child: Text(
-              stepLabel ?? '',
-              key: ValueKey(stepLabel),
-              style: theme.textTheme.labelSmall,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: AnimatedSwitcher(
+                duration: duration,
+                switchInCurve: OnboardingTokens.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) =>
+                    OnboardingMotion.fadeSlide(
+                  child,
+                  animation: animation,
+                  offsetY: 0.02,
+                ),
+                child: Text(
+                  stepLabel ?? '',
+                  key: ValueKey(stepLabel),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.labelSmall,
+                ),
+              ),
             ),
           ),
         ],
