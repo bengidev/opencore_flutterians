@@ -9,10 +9,17 @@ class HomePlaceholderPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
-    return Center(
-      child: Text(
-        title,
-        style: TextStyle(color: colors.textSecondary, fontSize: 16),
+    return SafeArea(
+      bottom: false,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textSecondary, fontSize: 16),
+          ),
+        ),
       ),
     );
   }
