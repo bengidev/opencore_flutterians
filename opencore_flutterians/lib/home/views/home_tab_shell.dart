@@ -32,6 +32,8 @@ class _HomeTabShellState extends State<HomeTabShell> {
 
     return Scaffold(
       backgroundColor: colors.surfaceBase,
+      // Keyboard inset is applied on HomeView so the sticky tab bar stays put.
+      resizeToAvoidBottomInset: false,
       body: IndexedStack(index: _index, children: pages),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -106,6 +108,9 @@ class _TabBarItem extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 spec.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,

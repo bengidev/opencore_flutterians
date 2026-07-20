@@ -34,8 +34,11 @@ class HomeComposerView extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
               ),
               style: TextStyle(color: colors.textPrimary, fontSize: 14),
-              maxLines: 4,
+              maxLines: 3,
               minLines: 1,
+              scrollPadding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom + 120,
+              ),
             ),
             const SizedBox(height: 8),
             Row(
