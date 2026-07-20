@@ -1,31 +1,25 @@
-# Home Welcome Shell & Particle Orb — Design Spec
+# Home Welcome GUI + Particle Orb — Design Spec
 
 **Date:** 2026-07-20  
 **Status:** Approved for planning  
-**Source reference:** `opencore_swifters` `HomeParticleOrbView` / `HomeWelcomeView` / `HomeView` welcome state  
-**Visual reference:** Desktop screenshot of iOS home welcome GUI
+**Reference:** [opencore_swifters](https://github.com/bengidev/opencore_swifters) Home feature (`HomeView`, `HomeWelcomeView`, `HomeParticleOrbView`)  
+**Visual reference:** Desktop screenshot of iOS home welcome state
 
 ## Goal
 
-Replicate the Swift home **welcome shell** in Flutter as a new `home` module: top bar, animated particle hero orb, and greeting copy. Wire it as the post-onboarding home screen. Preserve orb visual complexity without frame-time spikes, using progressive core→outer reveal so first paint feels snappy. Apply the same viewport-driven responsiveness to **onboarding** layout. Polish motion per Emil Kowalski design-engineering rules.
+Replicate the OpenCore Swifters home welcome GUI in Flutter as a new `home` module, with primary fidelity on the center **hero particle orb**. Ship a full visual shell (UI-only). Preserve orb complexity without frame-time spikes by baking particles into layers (Swift’s performance model) plus Flutter-specific optimizations. Wire the module as the real post-onboarding home.
 
-## Non-goals
-
-- Composer chrome, bottom tab bar, side panel, chat transcript, or API/model selection
-- Functional sidebar / new-chat / speech wiring beyond visual top-bar affordances
-- Redesigning onboarding visuals or inventing new decorative onboarding motion
-
-## Decisions locked
+## Decisions (locked)
 
 | Topic | Choice |
 | --- | --- |
-| Scope | Welcome shell only (option A) |
-| Integration | Replace `OpenCoreHomePage` as `OnboardingFacade` home |
-| Orb architecture | Pre-rasterized layered bitmaps + transform/opacity animation (Swift parity) |
-| First-load UX | Progressive stage-in: core first, then mid/outer/orbit layers |
-| Naming | `lib/home/`; orb package `lib/home/home_orb/`; types prefixed `Home` / `HomeOrb` |
-| Responsiveness | Viewport metrics for home **and** onboarding |
-| Motion polish | Emil design-eng: ease-out enters, transform+opacity only, no `scale(0)`, press ~0.97 |
+| Scope | Full visual shell: top bar, orb + greeting, composer, model/speed/context pills, sticky bottom tab bar |
+| Backend | None — no chat/API/model catalog |
+| Orb fidelity | Near-exact port of Swift bake + animation model, with Flutter optimizations that do not change the look |
+| Integration | Replace placeholder `OpenCoreHomePage` via onboarding `home:` wiring |
+| Orb naming | `home_orb_*` under `lib/home/home_orb/` |
+| Bottom nav | Sticky bottom tab bar (pinned; content insets above it) |
+| Motion polish | Emil Kowalski design-engineering guidance for shell interactions |
 
 ## Architecture
 
@@ -33,122 +27,199 @@ Replicate the Swift home **welcome shell** in Flutter as a new `home` module: to
 
 ```
 lib/home/
-  home.dart                         # public exports
-  home_page.dart                    # post-onboarding root scaffold
-  home_top_bar.dart                 # menu + new chat icons (visual)
-  home_welcome_view.dart            # centered orb + greeting
-  home_welcome_layout_metrics.dart  # viewport → spacers / orb size / type scale
-  home_tokens.dart
-  home_theme.dart
+  home.dart                 # public exports
+  home_facade.dart          # post-onboarding root builder
+  home_tokens.dart          # spacing, radii, typography sizes
+  home_theme.dart           # grayscale palette (screenshot match)
+  views/
+    home_tab_shell.dart     # sticky bottom tab bar + page host
+    home_view.dart          # welcome home content
+    home_welcome_view.dart  # orb + greeting + encryption copy
+    home_composer_view.dart # prompt card chrome
+    home_model_rail.dart    # model / Max / context chips
+    home_placeholder_page.dart  # Settings & About stubs
   home_orb/
-    home_orb_view.dart              # widget + animation / stage orchestration
-    home_orb_metrics.dart           # canvas size, fields, glyph ramp (Swift parity)
-    home_orb_math.dart              # noise / gaussian helpers
-    home_orb_layout.dart            # deterministic particle seeds
-    home_orb_renderer.dart          # bake ui.Image layers / sprites
-    home_orb_asset_pack.dart        # descriptors + cache key (tint/accent)
-    home_orb_stage.dart             # progressive reveal stages
+    home_orb_view.dart
+    home_orb_baker.dart
+    home_orb_metrics.dart
+    home_orb_layout.dart
+    home_orb_math.dart
+    home_orb_layer_pack.dart
+    home_orb_animator.dart
 ```
 
 ### Screen composition
 
-1. `MaterialApp` → `OnboardingFacade().buildRoot(home: const HomePage())`
-2. `HomePage`: light surface scaffold → `HomeTopBar` → `HomeWelcomeView`
-3. `HomeWelcomeView`: vertical centering via `HomeWelcomeLayoutMetrics`, then `HomeOrbView` + monospaced greeting + encryption sublines
-4. No composer / bottom nav in this iteration — empty bottom breathing room only
+```
+OnboardingFacade.buildRoot(
+  home: HomeFacade().buildRoot(),
+)
+  → HomeTabShell (sticky bottom bar: Home | Settings | About)
+       Home tab → HomeView
+         Top bar (menu + plus)
+         Welcome column (home_orb + greeting + encryption lines)
+         Composer card
+         Model rail (model chip, Max, context 0)
+       Settings / About → placeholder pages
+```
 
-### Orb rendering model (performance)
+### State (v1)
 
-Mirror Swift `HomeParticleOrbView`:
+Lightweight local state only:
 
-1. **Bake once** (deterministic layout → raster `ui.Image`s):
-   - Outer dot layers, pulse dots, core block glyph layers (×3 prominence), dust
-   - Shared outer-orbit-dot sprite and per-spark glyph sprites
-2. **Animate cheaply** each frame: only layer `Transform` (position / rotation / scale) and opacity — never redraw hundreds of particles in `CustomPainter` every tick
-3. **Cache** asset pack by tint + accent colors; skip rebake on revisit when colors match
-4. **Lifecycle:** pause continuous motion when route inactive or reduce-motion / `disableAnimations` is on; still allow a static (or opacity-only) progressive reveal
+- Selected tab index
+- Composer focus + draft text (visual)
+- Optional local speed/model display strings (static defaults matching screenshot)
 
-### Progressive reveal (perceived performance)
+No bloc/cubit required for v1. Prefer `StatefulWidget` / small `ValueNotifier`s to avoid over-architecture for UI-only chrome.
 
-Stages expand outward so users never wait on a blank hero while baking:
+## Hero orb (`home_orb`)
 
-| Stage | Content | Behavior |
-| --- | --- | --- |
-| 0 | First dense core-block layer | Show as soon as ready; enter opacity + scale from ~0.95 |
-| 1 | Remaining core block layers | Fade/scale in with short stagger |
-| 2 | Pulse + dust mid layers | Same |
-| 3 | Outer haze / outer dots | Same |
-| 4 | Orbit dots + sparks; enable full drift/orbit loops | Same |
+### Performance model (non-negotiable)
 
-Later stages generate in the background (isolate and/or chunked microtasks). Stage transitions use **ease-out**, ~180–250ms, stagger ~40–70ms. Continuous orbit/drift uses ease-in-out / paced loops and runs only after stage 4 (or immediately in reduced form if already fully baked from cache).
+Do **not** redraw ~1,100 particles every frame.
 
-### Responsiveness
+Port Swift’s approach:
 
-#### Home — `HomeWelcomeLayoutMetrics`
+1. **Bake once** (per palette): generate particles with deterministic seed math into **7 raster `ui.Image` layers** plus shared orbit-dot and spark bitmaps.
+2. **Animate cheaply forever**: only `transform` (position/rotation/scale) and `opacity` on ~77 nodes (7 layers + ~42 orbit dots + ~28 sparks).
 
-Resolved from viewport height (and width for horizontal padding / type fit):
+Particle inventory (match Swift counts):
 
-- Orb height: standard ~260 → compact ~200 when the hero cannot fit with min edge spacing
-- Horizontal padding and top-bar insets scale with width
-- Greeting: monospaced semibold; single line with min scale / fit so it does not overflow on narrow devices
-- Sublines: secondary grey; spacing tracks orb size
-- Top-bar icon hit targets ≥ 44 logical px
-
-Orb canvas keeps Swift aspect (~360×240 logical); scales uniformly inside its allocated box.
-
-#### Onboarding — `OnboardingLayoutMetrics` (layout pass only)
-
-Thread viewport-driven metrics through existing chrome that currently uses fixed sizes, including:
-
-- `OnboardingHeroFrame` fixed height `280` → compact / standard / roomy
-- Page shell padding `24` and vertical gaps
-- Feature header / nav spacing (keep ≥44 tap targets; tighten on short screens)
-- Heroes that assume fixed boxes (e.g. brand orbit `300`) size from metrics
-
-Same look and existing motion tokens; no visual redesign.
-
-### Motion polish (Emil design-eng)
-
-| Surface | Rule |
+| Layer / set | Count / contents |
 | --- | --- |
-| Orb stage-in | Purpose: hide bake latency + avoid jarring pop; never `scale(0)` — start ~0.95 + opacity |
-| Stage timing | Ease-out, under ~300ms per stage; short stagger |
-| Continuous orbit | Transform + opacity only; pause off-screen / reduce-motion |
-| Top-bar press | Scale ~0.97, ~160ms ease-out |
-| Greeting appear | Soft opacity (+ tiny Y) after core visible; does not compete with orb |
-| Frequency | Welcome orb is rare/first-view → progressive delight OK |
-| Onboarding | Keep existing `easeOut` / `easeInOut` / short UI durations; responsive layout only |
+| Outer dots | 138 + 126 |
+| Pulse dots | 86 |
+| Core blocks (`░▒▓█`) | 236 + 220 + 158 |
+| Orb dust | 132 |
+| Outer orbit dots | 42 animated sprites |
+| Sparks | 28 animated sprites |
+| Raster layers total | 7 images |
 
-### Theming
+Canvas metrics (logical): **360 × 240**; outer field 324×204; core field 156×146; snap grid 3; glyph ramp `░▒▓█`.
 
-Light monochrome welcome matching the screenshot (white surface, near-black primary text, grey secondary). Prefer home tokens aligned with OpenCore light palette; do not introduce purple Material seed styling on this screen.
+### Bake pipeline
 
-### Error / edge cases
+- `home_orb_math.dart` — `noise`, `gaussian2D` (port of `ParticleOrbMath`)
+- `home_orb_layout.dart` — `makeOuterDots`, `makePulseDots`, `makeOrbDust`, `makeCoreBlocks`, `coreDensity`, orbit/spark seeds (port of `ParticleOrbLayoutFactory`)
+- `home_orb_baker.dart` — paint dots/blocks/sparks into `ui.Image` via `PictureRecorder` / `Canvas`
+- Bake **off the UI isolate** (`compute` or dedicated isolate); cache pack keyed by tint + accent colors
+- Re-bake only when palette colors change
 
-- Bake failure: show a minimal static core placeholder (no crash); log in debug
-- Color theme change: invalidate cache and rebake; progressive reveal may restart from core
-- Very small viewports: compact metrics; greeting still one line via fit/scale
-- Reduce-motion: no orbit/drift; stages may snap or opacity-fade only
+### Animation
+
+- Drift / rotation / scale / opacity keyframe loops matching Swift durations and phase offsets
+- Outer orbit dots and sparks follow elliptical orbits with radial pulse
+- Animate **only** transform + opacity (GPU-friendly)
+
+### Lifecycle / accessibility
+
+Pause ambient motion when:
+
+- App lifecycle ≠ resumed
+- Home tab is not visible
+- `MediaQuery.disableAnimations` / reduce-motion preference is set
+
+Under reduce-motion: hold rest poses (opacity/scale/position at rest). Soft opacity settle is allowed; no orbit/drift/rotation.
+
+### Optimizations (look-preserving)
+
+- Bake off main isolate; cache by palette
+- `RepaintBoundary` around the orb host
+- Pause controllers when offstage / inactive tab
+- Avoid rebuilding static shell widgets on orb ticks (orb subtree owns its `AnimatedBuilder`s)
+- Prefer pre-decoded images + `RawImage` / layered `Transform` stack over per-frame `CustomPainter` of particles
+
+## Sticky bottom tab bar
+
+- Pinned to the bottom of `HomeTabShell` (not a scroll-away floating overlay)
+- Content area uses bottom inset so composer and pills never sit under the bar
+- Visual chrome may still use a rounded pill / soft surface matching the screenshot; “sticky” refers to layout behavior
+- Tabs: Home (active), Settings, About
+- Active indicator: rounded highlight behind icon + label
+- Tab change motion ≤ 220ms ease-out; no bounce
+
+## Composer + model rail (visual only)
+
+**Composer**
+
+- Large rounded card
+- Placeholder: `Ask anything... @files, $skills, /commands`
+- Bottom row: `+` (left), mic + circular send (right)
+- Local focus only; send/mic/`+` are no-ops or empty stubs
+- Press feedback: scale ~0.97, 140–160ms ease-out
+
+**Model rail**
+
+- Model chip (truncated title, e.g. Google Gemma line from screenshot)
+- Speed chip (“Max”)
+- Circular context usage `0`
+- Taps may no-op or open empty sheets; no real catalog
+
+## Motion polish (Emil guidance)
+
+| Interaction | Spec | Rationale |
+| --- | --- | --- |
+| Icon / pill press | scale 0.97, ~140–160ms ease-out | Instant feedback |
+| Tab selection | active pill morph ≤220ms ease-out | Occasional spatial state |
+| Composer focus layout | ≤220ms ease-out | Avoid jarring jump |
+| Orb ambient loops | long ease-in-out (Swift timings) | Decorative constant motion; pause under reduce-motion |
+| Keyboard / high-frequency toggles | no decorative delay animations | Avoid sluggish feel |
+
+Only animate transform and opacity for shell chrome. Never animate ambient orb via full particle redraw.
+
+## Theming
+
+- Light grayscale palette matching screenshot (white surface, black primary text, medium grey secondary)
+- Monospaced greeting headline (~28 semibold)
+- Secondary encryption copy ~11 regular, grey
+- Tokens live in `home_tokens.dart` / `home_theme.dart`; do not depend on onboarding theme internals
+
+## Welcome layout metrics
+
+Port `HomeWelcomeLayoutMetrics` behavior:
+
+- Standard orb height 260 + padding 28 when viewport allows
+- Compact orb height 200 + padding 20 when needed
+- Vertically center hero (orb + text block ~66) with min edge spacing 16
+
+## Wiring
+
+Replace:
+
+```dart
+home: const OpenCoreHomePage(title: 'OpenCore'),
+```
+
+with:
+
+```dart
+home: HomeFacade().buildRoot(),
+```
+
+Remove or leave unused the counter `OpenCoreHomePage` (prefer delete if nothing references it).
 
 ## Testing
 
-- Widget: `HomePage` shows top bar + greeting copy; orb mounts without throw
-- Widget: progressive stages advance (or complete from cache) without overflow
-- Layout: pump home and onboarding at narrow (~320×568) and large phone sizes — no overflow / clipped primary CTAs
-- Optional later: golden for static orb resting state (not required for first plan)
+- Widget: `HomeFacade` root shows greeting copy and sticky tab bar
+- Widget: Settings / About tabs show placeholders
+- Orb: bake yields 7 layers + expected orbit/spark counts
+- Orb: reduce-motion keeps layers at rest (no orbit controllers running)
+- Smoke: post-onboarding path builds home root without throwing
+
+## Out of scope
+
+- Real chat sending / streaming
+- Model catalog / provider auth
+- Side panel / drawer content
+- Speech / vision features
+- Dark mode parity (unless trivial via tokens later)
+- Functional encryption — copy only
 
 ## Success criteria
 
-1. Post-onboarding destination is `HomePage` welcome shell
-2. Orb visually reads as the Swift particle orb (dense glyph core, feathered outer dust, subtle motion)
-3. First paint shows core quickly; outer complexity streams in without a long blank wait
-4. No sustained jank from per-particle painting; animation stays on transform/opacity of baked layers
-5. Home and onboarding adapt cleanly across small and large phone viewports
-6. Motion follows Emil polish rules above
-
-## Implementation notes for planning
-
-- Port layout math / metrics constants from Swift `HomeParticleOrbView` private types for visual parity
-- Prefer splitting `home_orb` files so no single file becomes an unmaintainable 1k+ line dump of bake + UI
-- Keep public API small: `HomePage`, `HomeOrbView`, barrel `home.dart`
-- TDD for metrics resolution and stage ordering where practical; visual bake may be covered by smoke widget tests
+1. Side-by-side with screenshot: layout, typography hierarchy, and orb silhouette read as the same product.
+2. Orb remains complex (glyph core + halo + orbiting sparks/dots) without sustained frame drops on a mid-range device during idle animation.
+3. Sticky tab bar stays pinned; switching tabs does not dispose/rebuild the orb bake unnecessarily when returning to Home (cache retained).
+4. Reduce-motion disables ambient orb motion.
+5. Onboarding completion lands on this home shell.
