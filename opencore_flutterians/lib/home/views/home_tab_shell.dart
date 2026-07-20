@@ -3,6 +3,7 @@ import '../home_theme.dart';
 import '../home_tokens.dart';
 import 'home_placeholder_page.dart';
 import 'home_pressable.dart';
+import 'home_view.dart';
 
 class HomeTabShell extends StatefulWidget {
   const HomeTabShell({super.key});
@@ -24,7 +25,7 @@ class _HomeTabShellState extends State<HomeTabShell> {
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
     final pages = const [
-      ColoredBox(color: Colors.white, child: SizedBox.expand()),
+      HomeView(),
       HomePlaceholderPage(title: 'Settings'),
       HomePlaceholderPage(title: 'About'),
     ];
