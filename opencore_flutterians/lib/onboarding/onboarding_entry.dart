@@ -144,59 +144,72 @@ class _OnboardingEntryViewState extends State<_OnboardingEntryView> {
                       final onFeaturePage =
                           displayPage.kind == OnboardingPageKind.feature;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (onFeaturePage)
-                            OnboardingFeatureHeader(
-                              pageIndex: displayIndex,
-                              featureCount: featureCount,
-                              stepLabel: displayPage.featureStepLabel,
-                            )
-                          else
-                            const SizedBox(height: 64),
-                          Expanded(
-                            child: PageView.builder(
-                              controller: pageController,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: state.pages.length,
-                              itemBuilder: (context, index) {
-                                final page = state.pages[index];
-                                return OnboardingPageShell(
-                                  page: page,
-                                  topInset: page.kind ==
-                                          OnboardingPageKind.feature
-                                      ? 48
-                                      : 0,
-                                  hero: OnboardingHeroRegistry.build(
-                                    page.heroId,
-                                    active: state.index == index,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                            child: OnboardingNavBar(
-                              kind: displayPage.kind,
-                              isFirst: displayIndex == 0,
-                              isCta:
-                                  displayPage.kind == OnboardingPageKind.cta,
-                              enterError: state.enterError,
-                              isEntering: state.isEntering,
-                              onBack: () =>
-                                  bloc.add(const OnboardingBackPressed()),
-                              onNext: () =>
-                                  bloc.add(const OnboardingNextPressed()),
-                              onSkip: () =>
-                                  bloc.add(const OnboardingSkipPressed()),
-                              onEnter: () async {
-                                bloc.add(const OnboardingEnterPressed());
-                              },
-                            ),
-                          ),
-                        ],
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final compact = constraints.maxHeight < 560;
+                          final navPadding = compact
+                              ? const EdgeInsets.fromLTRB(24, 16, 24, 16)
+                              : const EdgeInsets.fromLTRB(24, 32, 24, 24);
+                          final pageTopInset = compact ? 24.0 : 48.0;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Keep header slot height stable across feature/CTA pages.
+                              SizedBox(
+                                height: compact ? 52 : 64,
+                                child: onFeaturePage
+                                    ? OnboardingFeatureHeader(
+                                        pageIndex: displayIndex,
+                                        featureCount: featureCount,
+                                        stepLabel: displayPage.featureStepLabel,
+                                      )
+                                    : const SizedBox.expand(),
+                              ),
+                              Expanded(
+                                child: PageView.builder(
+                                  controller: pageController,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: state.pages.length,
+                                  itemBuilder: (context, index) {
+                                    final page = state.pages[index];
+                                    return OnboardingPageShell(
+                                      page: page,
+                                      topInset: page.kind ==
+                                              OnboardingPageKind.feature
+                                          ? pageTopInset
+                                          : 0,
+                                      hero: OnboardingHeroRegistry.build(
+                                        page.heroId,
+                                        active: state.index == index,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Padding(
+                                padding: navPadding,
+                                child: OnboardingNavBar(
+                                  kind: displayPage.kind,
+                                  isFirst: displayIndex == 0,
+                                  isCta: displayPage.kind ==
+                                      OnboardingPageKind.cta,
+                                  enterError: state.enterError,
+                                  isEntering: state.isEntering,
+                                  onBack: () => bloc
+                                      .add(const OnboardingBackPressed()),
+                                  onNext: () => bloc
+                                      .add(const OnboardingNextPressed()),
+                                  onSkip: () => bloc
+                                      .add(const OnboardingSkipPressed()),
+                                  onEnter: () async {
+                                    bloc.add(const OnboardingEnterPressed());
+                                  },
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),
