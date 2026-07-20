@@ -36,10 +36,12 @@ class _OnboardingBootstrapView extends StatelessWidget {
       builder: (context, state) {
         return switch (state) {
           OnboardingBootstrapChecking() => const Scaffold(
-              body: Center(child: Text('[LOADING...]')),
+              body: SafeArea(child: Center(child: Text('[LOADING...]'))),
             ),
           OnboardingBootstrapFailure() => const Scaffold(
-              body: Center(child: Text('[ERROR: COULD NOT LOAD]')),
+              body: SafeArea(
+                child: Center(child: Text('[ERROR: COULD NOT LOAD]')),
+              ),
             ),
           OnboardingBootstrapShowHome() => home,
           OnboardingBootstrapShowOnboarding() => OnboardingEntry(store: store),
