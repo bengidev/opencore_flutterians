@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../home_orb/home_orb_view.dart';
 import '../home_theme.dart';
 import '../home_tokens.dart';
 import 'home_welcome_layout.dart';
 
 class HomeWelcomeView extends StatelessWidget {
-  const HomeWelcomeView({super.key});
+  const HomeWelcomeView({super.key, this.orbActive = true});
+
+  final bool orbActive;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +28,7 @@ class HomeWelcomeView extends StatelessWidget {
             SizedBox(
               key: const Key('homeOrbSlot'),
               height: metrics.orbHeight,
-              child: const ColoredBox(color: Colors.transparent),
+              child: HomeOrbView(active: orbActive),
             ),
             SizedBox(height: metrics.orbBottomPadding),
             Column(

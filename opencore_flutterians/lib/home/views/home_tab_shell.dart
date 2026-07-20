@@ -24,10 +24,10 @@ class _HomeTabShellState extends State<HomeTabShell> {
   @override
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
-    final pages = const [
-      HomeView(),
-      HomePlaceholderPage(title: 'Settings'),
-      HomePlaceholderPage(title: 'About'),
+    final pages = [
+      HomeView(orbActive: _index == 0),
+      const HomePlaceholderPage(title: 'Settings'),
+      const HomePlaceholderPage(title: 'About'),
     ];
 
     return Scaffold(
