@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:opencore_flutterians/home/home_orb/home_orb_animator.dart';
 import 'package:opencore_flutterians/home/home_orb/home_orb_baker.dart';
 import 'package:opencore_flutterians/home/home_orb/home_orb_layer_pack.dart';
@@ -16,10 +17,15 @@ class HomeOrbView extends StatefulWidget {
   State<HomeOrbView> createState() => _HomeOrbViewState();
 }
 
-class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin, WidgetsBindingObserver {
-  static const _controllerDuration = Duration(seconds: 20);
+class _HomeOrbViewState extends State<HomeOrbView>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  /// Monotonic clock — never resets. Layer loops use `% duration` themselves.
+  /// A repeating [AnimationController] used to snap `elapsed` 20→0 and teleport
+  /// layers whose durations do not divide 20 evenly.
+  final Stopwatch _clock = Stopwatch();
+  final ValueNotifier<double> _elapsedSeconds = ValueNotifier(0);
 
-  AnimationController? _controller;
+  Ticker? _ticker;
   HomeOrbLayerPack? _pack;
   Color? _loadedTint;
   Color? _loadedAccent;
@@ -40,13 +46,14 @@ class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _controller = AnimationController(vsync: this, duration: _controllerDuration)..repeat();
+    _ticker = createTicker(_onTick);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _controller?.dispose();
+    _ticker?.dispose();
+    _elapsedSeconds.dispose();
     super.dispose();
   }
 
@@ -67,6 +74,10 @@ class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin
   void didUpdateWidget(covariant HomeOrbView oldWidget) {
     super.didUpdateWidget(oldWidget);
     _syncAnimation();
+  }
+
+  void _onTick(Duration _) {
+    _elapsedSeconds.value = _clock.elapsedMicroseconds / 1e6;
   }
 
   void _ensurePack() {
@@ -95,18 +106,26 @@ class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin
   }
 
   void _syncAnimation() {
-    final controller = _controller;
-    if (controller == null) {
+    final ticker = _ticker;
+    if (ticker == null) {
       return;
     }
 
     final shouldAnimate = _shouldAnimate && _pack != null;
     if (shouldAnimate) {
-      if (!controller.isAnimating) {
-        controller.repeat();
+      if (!_clock.isRunning) {
+        _clock.start();
+      }
+      if (!ticker.isActive) {
+        ticker.start();
       }
     } else {
-      controller.stop();
+      if (_clock.isRunning) {
+        _clock.stop();
+      }
+      if (ticker.isActive) {
+        ticker.stop();
+      }
     }
 
     if (_wasAnimating != shouldAnimate) {
@@ -122,7 +141,6 @@ class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin
       return const SizedBox.shrink();
     }
 
-    final controller = _controller!;
     final shouldAnimate = _shouldAnimate;
 
     return LayoutBuilder(
@@ -133,10 +151,9 @@ class _HomeOrbViewState extends State<HomeOrbView> with TickerProviderStateMixin
             width: HomeOrbMetrics.canvasSize.width,
             height: HomeOrbMetrics.canvasSize.height,
             child: RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: controller,
-                builder: (context, child) {
-                  final elapsed = controller.value * _controllerDuration.inMilliseconds / 1000;
+              child: ValueListenableBuilder<double>(
+                valueListenable: _elapsedSeconds,
+                builder: (context, elapsed, child) {
                   return _HomeOrbCanvas(
                     pack: pack,
                     elapsed: elapsed,
@@ -168,12 +185,9 @@ class _HomeOrbCanvas extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        for (final descriptor in pack.layers)
-          _buildLayer(descriptor),
-        for (final descriptor in pack.outerOrbitDots)
-          _buildOrbitDot(descriptor),
-        for (final descriptor in pack.sparks)
-          _buildSpark(descriptor),
+        for (final descriptor in pack.layers) _buildLayer(descriptor),
+        for (final descriptor in pack.outerOrbitDots) _buildOrbitDot(descriptor),
+        for (final descriptor in pack.sparks) _buildSpark(descriptor),
       ],
     );
   }
