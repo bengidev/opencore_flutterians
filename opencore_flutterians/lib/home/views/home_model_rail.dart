@@ -12,20 +12,18 @@ class HomeModelRail extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(
-          flex: 3,
-          child: _RailChip(
-            label: HomeTokens.modelTitle,
-            colors: colors,
+        Flexible(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _RailChip(
+              label: HomeTokens.modelTitle,
+              colors: colors,
+            ),
           ),
         ),
-        const SizedBox(width: 8),
-        Flexible(
-          flex: 1,
-          child: _RailChip(
-            label: HomeTokens.speedTitle,
-            colors: colors,
-          ),
+        _RailChip(
+          label: HomeTokens.speedTitle,
+          colors: colors,
         ),
         const SizedBox(width: 8),
         Container(
@@ -33,7 +31,7 @@ class HomeModelRail extends StatelessWidget {
           height: 32,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(HomeTokens.radiusControl),
             border: Border.all(color: colors.border),
           ),
           child: Text(
@@ -64,7 +62,7 @@ class _RailChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colors.surfaceRaised,
-        borderRadius: BorderRadius.circular(HomeTokens.radiusPill),
+        borderRadius: BorderRadius.circular(HomeTokens.radiusControl),
         border: Border.all(color: colors.border),
       ),
       child: Text(
