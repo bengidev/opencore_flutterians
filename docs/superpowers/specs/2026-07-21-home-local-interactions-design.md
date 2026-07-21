@@ -101,7 +101,7 @@ Prefer a tiny shared helper for `showMenu` styling (position from render box + h
 
 - [x] Widget tests: send with text clears field and restores mic tooltip; model/speed selection updates visible chip text; menu/attachment menus can be opened (find items) when practical.
 - [x] Existing tab shell test still passes (Settings placeholder visible; sticky bar present). Optionally assert no crash under `disableAnimations: true`.
-- [ ] Manual: tap every control once; switch tabs Home ↔ Settings ↔ About; verify orb pauses off Home.
+- [x] Manual: tap every control once; switch tabs Home ↔ Settings ↔ About; verify orb pauses off Home.
 
 ## Out of scope
 

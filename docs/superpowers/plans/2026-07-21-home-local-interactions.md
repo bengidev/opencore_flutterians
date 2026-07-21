@@ -978,4 +978,4 @@ Mirrors [design success criteria + testing](../specs/2026-07-21-home-local-inter
 - [x] Model/speed chip labels via popup; context badge snackbar
 - [x] Tab switch: sliding pill + cross-fade; re-tap active is a no-op
 - [x] Reduced motion: page switch without cross-fade; snapped indicator
-- [ ] Manual: tap every control once; Home ↔ Settings ↔ About; verify orb pauses off Home
+- [x] Manual: tap every control once; Home ↔ Settings ↔ About; verify orb pauses off Home
