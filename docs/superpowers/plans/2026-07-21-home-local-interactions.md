@@ -46,7 +46,7 @@
 **Interfaces:**
 - Produces: `HomeTokens.stubChatTitles`, `stubModelTitles`, `stubSpeedTitles`, snackbar copy strings
 
-- [ ] **Step 1: Extend tokens**
+- [x] **Step 1: Extend tokens**
 
 Replace / append in `lib/home/home_tokens.dart` so existing fields stay, and add:
 
@@ -81,13 +81,13 @@ Replace / append in `lib/home/home_tokens.dart` so existing fields stay, and add
 
 Keep all existing radius/duration/greeting fields unchanged.
 
-- [ ] **Step 2: Analyze**
+- [x] **Step 2: Analyze**
 
 Run: `cd opencore_flutterians && dart analyze lib/home/home_tokens.dart`
 
 Expected: no issues.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add opencore_flutterians/lib/home/home_tokens.dart
@@ -106,7 +106,7 @@ git commit -m "Add home stub catalogs and snackbar copy."
 - Produces: `Future<T?> showHomePopupMenu<T>({ required BuildContext context, required List<PopupMenuEntry<T>> entries })`
 - Consumes: `HomeColors`, `HomeTokens.radius`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `test/home/home_popup_menu_test.dart`:
 
@@ -157,13 +157,13 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_popup_menu_test.dart`
 
 Expected: FAIL — `home_popup_menu.dart` not found.
 
-- [ ] **Step 3: Implement helper**
+- [x] **Step 3: Implement helper**
 
 Create `lib/home/views/home_popup_menu.dart`:
 
@@ -204,13 +204,13 @@ Future<T?> showHomePopupMenu<T>({
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_popup_menu_test.dart`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add opencore_flutterians/lib/home/views/home_popup_menu.dart \
@@ -230,7 +230,7 @@ git commit -m "Add shared home popup menu helper."
 - Consumes: `showHomePopupMenu`, `HomeTokens.snackbar*`, attachment labels `Photo` / `File` / `Camera`
 - Produces: send clears `controller` + unfocus; mic/attachment local feedback (no new public API required)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `test/home/home_composer_test.dart`:
 
@@ -308,13 +308,13 @@ Append to `test/home/home_composer_test.dart`:
 
 Ensure imports include `home_tokens` via `package:opencore_flutterians/home/home.dart` (already exported).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_composer_test.dart`
 
 Expected: FAIL — send does not clear; snackbars/menus missing.
 
-- [ ] **Step 3: Implement composer handlers**
+- [x] **Step 3: Implement composer handlers**
 
 In `home_composer_view.dart`:
 
@@ -359,13 +359,13 @@ onPressed: () {
 },
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_composer_test.dart`
 
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add opencore_flutterians/lib/home/views/home_composer_view.dart \
@@ -404,7 +404,7 @@ class HomeModelRail extends StatelessWidget {
 
 - Consumes: `showHomePopupMenu`, `HomeTokens.stubModelTitles`, `stubSpeedTitles`, `snackbarContext`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `test/home/home_model_rail_test.dart`:
 
@@ -479,13 +479,13 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_model_rail_test.dart`
 
 Expected: FAIL — constructor / menus missing.
 
-- [ ] **Step 3: Rewrite `HomeModelRail`**
+- [x] **Step 3: Rewrite `HomeModelRail`**
 
 Replace `home_model_rail.dart` with a pressable rail that:
 
@@ -512,7 +512,7 @@ HomeModelRail(
 
 Update `test/home/home_composer_test.dart` first test if it pumps `HomeView` and expects rail text — it should still find Gemma / Max / `0` with defaults.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -522,7 +522,7 @@ cd opencore_flutterians && flutter test test/home/home_model_rail_test.dart test
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add opencore_flutterians/lib/home/views/home_model_rail.dart \
@@ -543,7 +543,7 @@ git commit -m "Make model rail chips selectable via popup menus."
 **Interfaces:**
 - Produces: local `_modelLabel` / `_speedLabel` owned by `HomeView`; menu uses `HomeTokens.stubChatTitles`; add clears draft + snackbar
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `test/home/home_view_interactions_test.dart`:
 
@@ -613,13 +613,13 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_view_interactions_test.dart`
 
 Expected: FAIL — menu empty / add no-op / state not wired.
 
-- [ ] **Step 3: Implement `HomeView` wiring**
+- [x] **Step 3: Implement `HomeView` wiring**
 
 In `_HomeViewState`:
 
@@ -671,7 +671,7 @@ HomeModelRail(
 
 Import `home_popup_menu.dart` and `services.dart` for haptics.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -684,7 +684,7 @@ cd opencore_flutterians && flutter test \
 
 Expected: PASS. If top-bar add collides with composer add, fix tests to use keys as noted.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add opencore_flutterians/lib/home/views/home_view.dart \
@@ -704,7 +704,7 @@ git commit -m "Wire home menu, new chat, and model/speed state."
 - Consumes: `HomeTokens.durationTab`, `easeOut`, `HomePressable`, `HapticFeedback.selectionClick`
 - Produces: same public `HomeTabShell` API; internal sliding pill + fade
 
-- [ ] **Step 1: Extend failing/updated tests**
+- [x] **Step 1: Extend failing/updated tests**
 
 Update `test/home/home_tab_shell_test.dart` to:
 
@@ -770,13 +770,13 @@ void main() {
 }
 ```
 
-- [ ] **Step 2: Run tests (baseline)**
+- [x] **Step 2: Run tests (baseline)**
 
 Run: `cd opencore_flutterians && flutter test test/home/home_tab_shell_test.dart`
 
 Expected: existing behavior may already pass; implement polish next regardless.
 
-- [ ] **Step 3: Implement polished tab shell**
+- [x] **Step 3: Implement polished tab shell**
 
 Rewrite body + bar in `home_tab_shell.dart` with this structure:
 
@@ -907,7 +907,7 @@ TweenAnimationBuilder<Color?>(
 
 5. Import `package:flutter/services.dart` for haptics.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -917,7 +917,7 @@ cd opencore_flutterians && flutter test test/home/home_tab_shell_test.dart
 
 Expected: PASS.
 
-- [ ] **Step 5: Full home regression**
+- [x] **Step 5: Full home regression**
 
 Run:
 
@@ -927,7 +927,7 @@ cd opencore_flutterians && flutter test test/home/
 
 Expected: all home tests PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add opencore_flutterians/lib/home/views/home_tab_shell.dart \
@@ -957,3 +957,25 @@ git commit -m "Polish home tab indicator and page cross-fade."
 | Stub catalogs in tokens | Task 1 |
 
 No TBD/placeholder steps remain after this review.
+
+## AC / TP tracking (post-implementation)
+
+Mirrors [design success criteria + testing](../specs/2026-07-21-home-local-interactions-design.md) and PR #5.
+
+### Acceptance criteria
+
+- [x] No home chrome control that looks tappable has an empty no-op (except re-tapping the already-active tab)
+- [x] Model and speed selections are visible on the rail after choosing from a popup menu
+- [x] Tab changes show a sliding indicator + short page cross-fade (instant under reduced motion)
+- [x] Existing home visual tokens and orb lifecycle behavior remain intact
+
+### Test plan
+
+- [x] `flutter test test/home/` (CI Analyze & test green)
+- [x] Menu → stub chat titles popup (not a bottom sheet)
+- [x] Top-bar + → draft clears + “New chat” snackbar
+- [x] Composer: attach / mic / send local actions
+- [x] Model/speed chip labels via popup; context badge snackbar
+- [x] Tab switch: sliding pill + cross-fade; re-tap active is a no-op
+- [x] Reduced motion: page switch without cross-fade; snapped indicator
+- [ ] Manual: tap every control once; Home ↔ Settings ↔ About; verify orb pauses off Home

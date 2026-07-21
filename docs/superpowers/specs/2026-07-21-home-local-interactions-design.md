@@ -99,9 +99,9 @@ Prefer a tiny shared helper for `showMenu` styling (position from render box + h
 
 ## Testing
 
-- Widget tests: send with text clears field and restores mic tooltip; model/speed selection updates visible chip text; menu/attachment menus can be opened (find items) when practical.
-- Existing tab shell test still passes (Settings placeholder visible; sticky bar present). Optionally assert no crash under `disableAnimations: true`.
-- Manual: tap every control once; switch tabs Home ↔ Settings ↔ About; verify orb pauses off Home.
+- [x] Widget tests: send with text clears field and restores mic tooltip; model/speed selection updates visible chip text; menu/attachment menus can be opened (find items) when practical.
+- [x] Existing tab shell test still passes (Settings placeholder visible; sticky bar present). Optionally assert no crash under `disableAnimations: true`.
+- [ ] Manual: tap every control once; switch tabs Home ↔ Settings ↔ About; verify orb pauses off Home.
 
 ## Out of scope
 
@@ -113,7 +113,7 @@ Prefer a tiny shared helper for `showMenu` styling (position from render box + h
 
 ## Success criteria
 
-1. No home chrome control that looks tappable has an empty no-op (except re-tapping the already-active tab).
-2. Model and speed selections are visible on the rail after choosing from a popup menu.
-3. Tab changes show a sliding indicator + short page cross-fade (instant under reduced motion).
-4. Existing home visual tokens and orb lifecycle behavior remain intact.
+- [x] No home chrome control that looks tappable has an empty no-op (except re-tapping the already-active tab).
+- [x] Model and speed selections are visible on the rail after choosing from a popup menu.
+- [x] Tab changes show a sliding indicator + short page cross-fade (instant under reduced motion).
+- [x] Existing home visual tokens and orb lifecycle behavior remain intact.
