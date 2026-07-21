@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 
 class HomeTokens {
-  static const radiusPill = 999.0;
-  static const radiusComposer = 28.0;
-  static const radiusTabBar = 28.0;
-  static const radiusTabActive = 16.0;
+  /// Shared corner radius for all home chrome (composer, tabs, chips, actions).
+  static const radius = 6.0;
 
-  static const durationPress = Duration(milliseconds: 150);
+  // Aliases kept so call sites stay readable by role.
+  static const radiusPill = radius;
+  static const radiusComposer = radius;
+  static const radiusTabBar = radius;
+  static const radiusTabActive = radius;
+  static const radiusControl = radius;
+
+  static const hitTarget = 44.0;
+  static const composerActionSize = 34.0;
+  static const composerMinHeight = 128.0;
+  static const composerMinLines = 3;
+  static const composerMaxLines = 6;
+
+  static const durationPress = Duration(milliseconds: 160);
+  static const durationRelease = Duration(milliseconds: 120);
   static const durationTab = Duration(milliseconds: 200);
   static const durationUi = Duration(milliseconds: 220);
 
