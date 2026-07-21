@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../home_theme.dart';
 import '../home_tokens.dart';
 import 'home_composer_view.dart';
 import 'home_model_rail.dart';
+import 'home_popup_menu.dart';
 import 'home_pressable.dart';
 import 'home_welcome_view.dart';
 
@@ -18,6 +20,8 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   final _draft = TextEditingController();
+  var _modelLabel = HomeTokens.modelTitle;
+  var _speedLabel = HomeTokens.speedTitle;
 
   @override
   void dispose() {
@@ -42,15 +46,44 @@ class _HomeViewState extends State<HomeView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  HomePressable(
-                    onPressed: () {},
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(Icons.menu, color: colors.textPrimary),
-                    ),
+                  Builder(
+                    builder: (menuContext) {
+                      return HomePressable(
+                        key: const Key('homeMenuButton'),
+                        onPressed: () async {
+                          final choice = await showHomePopupMenu<String>(
+                            context: menuContext,
+                            entries: [
+                              for (final title in HomeTokens.stubChatTitles)
+                                PopupMenuItem(
+                                  value: title,
+                                  child: Text(title),
+                                ),
+                            ],
+                          );
+                          if (choice == null) return;
+                          HapticFeedback.lightImpact();
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(Icons.menu, color: colors.textPrimary),
+                        ),
+                      );
+                    },
                   ),
                   HomePressable(
-                    onPressed: () {},
+                    key: const Key('homeNewChatButton'),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _draft.clear();
+                      ScaffoldMessenger.of(context)
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(
+                          const SnackBar(
+                            content: Text(HomeTokens.snackbarNewChat),
+                          ),
+                        );
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Icon(Icons.add, color: colors.textPrimary),
@@ -68,10 +101,10 @@ class _HomeViewState extends State<HomeView> {
                   HomeComposerView(controller: _draft),
                   const SizedBox(height: 10),
                   HomeModelRail(
-                    modelLabel: HomeTokens.modelTitle,
-                    speedLabel: HomeTokens.speedTitle,
-                    onModelSelected: (_) {},
-                    onSpeedSelected: (_) {},
+                    modelLabel: _modelLabel,
+                    speedLabel: _speedLabel,
+                    onModelSelected: (v) => setState(() => _modelLabel = v),
+                    onSpeedSelected: (v) => setState(() => _speedLabel = v),
                   ),
                 ],
               ),
