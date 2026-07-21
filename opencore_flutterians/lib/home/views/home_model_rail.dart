@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../home_theme.dart';
 import '../home_tokens.dart';
+import 'home_popup_menu.dart';
+import 'home_pressable.dart';
 
 class HomeModelRail extends StatelessWidget {
-  const HomeModelRail({super.key});
+  const HomeModelRail({
+    super.key,
+    required this.modelLabel,
+    required this.speedLabel,
+    required this.onModelSelected,
+    required this.onSpeedSelected,
+  });
+
+  final String modelLabel;
+  final String speedLabel;
+  final ValueChanged<String> onModelSelected;
+  final ValueChanged<String> onSpeedSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -12,38 +26,77 @@ class HomeModelRail extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(
-          flex: 3,
-          child: _RailChip(
-            label: HomeTokens.modelTitle,
-            colors: colors,
-          ),
-        ),
-        const SizedBox(width: 8),
         Flexible(
-          flex: 1,
-          child: _RailChip(
-            label: HomeTokens.speedTitle,
-            colors: colors,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Builder(
+              builder: (chipContext) {
+                return HomePressable(
+                  semanticLabel: 'Select model',
+                  onPressed: () async {
+                    final choice = await showHomePopupMenu<String>(
+                      context: chipContext,
+                      entries: [
+                        for (final title in HomeTokens.stubModelTitles)
+                          PopupMenuItem(value: title, child: Text(title)),
+                      ],
+                    );
+                    if (!chipContext.mounted || choice == null) return;
+                    onModelSelected(choice);
+                  },
+                  child: _RailChip(label: modelLabel, colors: colors),
+                );
+              },
+            ),
           ),
         ),
+        Builder(
+          builder: (chipContext) {
+            return HomePressable(
+              semanticLabel: 'Select speed',
+              onPressed: () async {
+                final choice = await showHomePopupMenu<String>(
+                  context: chipContext,
+                  entries: [
+                    for (final title in HomeTokens.stubSpeedTitles)
+                      PopupMenuItem(value: title, child: Text(title)),
+                  ],
+                );
+                if (!chipContext.mounted || choice == null) return;
+                onSpeedSelected(choice);
+              },
+              child: _RailChip(label: speedLabel, colors: colors),
+            );
+          },
+        ),
         const SizedBox(width: 8),
-        Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: colors.border),
-          ),
-          child: Text(
-            HomeTokens.contextLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+        HomePressable(
+          semanticLabel: 'Context tokens',
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(content: Text(HomeTokens.snackbarContext)),
+              );
+          },
+          child: Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(HomeTokens.radiusControl),
+              border: Border.all(color: colors.border),
+            ),
+            child: Text(
+              HomeTokens.contextLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
@@ -64,7 +117,7 @@ class _RailChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colors.surfaceRaised,
-        borderRadius: BorderRadius.circular(HomeTokens.radiusPill),
+        borderRadius: BorderRadius.circular(HomeTokens.radiusControl),
         border: Border.all(color: colors.border),
       ),
       child: Text(

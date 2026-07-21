@@ -129,7 +129,7 @@ class MiniE2EBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: colors.accent.withValues(alpha: 0.12 + pulse * 0.08),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl),
         border: Border.all(color: colors.accent.withValues(alpha: 0.35 + glow * 0.2)),
         boxShadow: [
           BoxShadow(
