@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../home_theme.dart';
+import '../home_tokens.dart';
 import 'home_composer_view.dart';
 import 'home_model_rail.dart';
 import 'home_pressable.dart';
@@ -66,7 +67,12 @@ class _HomeViewState extends State<HomeView> {
                 children: [
                   HomeComposerView(controller: _draft),
                   const SizedBox(height: 10),
-                  const HomeModelRail(),
+                  HomeModelRail(
+                    modelLabel: HomeTokens.modelTitle,
+                    speedLabel: HomeTokens.speedTitle,
+                    onModelSelected: (_) {},
+                    onSpeedSelected: (_) {},
+                  ),
                 ],
               ),
             ),
