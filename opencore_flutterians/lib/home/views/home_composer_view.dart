@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../home_theme.dart';
 import '../home_tokens.dart';
+import 'home_popup_menu.dart';
 import 'home_pressable.dart';
 
 class HomeComposerView extends StatefulWidget {
@@ -125,7 +126,20 @@ class _HomeComposerViewState extends State<HomeComposerView> {
               children: [
                 _ComposerIconButton(
                   tooltip: 'Add attachment',
-                  onPressed: () {},
+                  onPressed: () async {
+                    final choice = await showHomePopupMenu<String>(
+                      context: context,
+                      entries: const [
+                        PopupMenuItem(value: 'Photo', child: Text('Photo')),
+                        PopupMenuItem(value: 'File', child: Text('File')),
+                        PopupMenuItem(value: 'Camera', child: Text('Camera')),
+                      ],
+                    );
+                    if (!context.mounted || choice == null) return;
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(content: Text(HomeTokens.snackbarAttachment(choice))));
+                  },
                   child: _MutedGlyph(
                     colors: colors,
                     icon: Icons.add_rounded,
@@ -164,13 +178,20 @@ class _HomeComposerViewState extends State<HomeComposerView> {
                           tooltip: 'Send',
                           onPressed: () {
                             HapticFeedback.lightImpact();
+                            widget.controller.clear();
+                            _focusNode.unfocus();
                           },
                           child: _SendGlyph(colors: colors),
                         )
                       : _ComposerIconButton(
                           key: const ValueKey('mic'),
                           tooltip: 'Voice input',
-                          onPressed: () {},
+                          onPressed: () {
+                            HapticFeedback.selectionClick();
+                            ScaffoldMessenger.of(context)
+                              ..hideCurrentSnackBar()
+                              ..showSnackBar(const SnackBar(content: Text(HomeTokens.snackbarVoiceSoon)));
+                          },
                           child: _MutedGlyph(
                             colors: colors,
                             icon: Icons.mic_none_rounded,
