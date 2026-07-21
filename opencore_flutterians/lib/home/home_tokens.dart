@@ -35,6 +35,29 @@ class HomeTokens {
   static const speedTitle = 'Max';
   static const contextLabel = '0';
 
+  static const stubChatTitles = <String>[
+    'Draft: onboarding copy',
+    'Refactor home shell',
+    'Weekend ideas',
+  ];
+
+  static const stubModelTitles = <String>[
+    modelTitle,
+    'Google: Gemma 4 9B',
+    'OpenCore: Local 7B',
+  ];
+
+  static const stubSpeedTitles = <String>[
+    'Fast',
+    'Balanced',
+    'Max',
+  ];
+
+  static const snackbarNewChat = 'New chat';
+  static const snackbarVoiceSoon = 'Voice input coming soon';
+  static const snackbarContext = 'Context: 0 tokens';
+  static String snackbarAttachment(String choice) => 'Added $choice';
+
   static const orbTint = Color(0xFF141414);
   static const orbAccent = Color(0xFF2B2B2B);
 }
