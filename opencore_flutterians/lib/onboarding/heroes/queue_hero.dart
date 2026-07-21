@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../onboarding_motion.dart';
 import '../onboarding_theme.dart';
+import '../onboarding_tokens.dart';
 import 'shared/mini_chat_primitives.dart';
 import 'shared/mini_growing_feed.dart';
 import 'shared/onboarding_hero_frame.dart';
@@ -151,7 +152,7 @@ class _RunningPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: colors.accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl),
         border: Border.all(color: colors.accent.withValues(alpha: 0.35)),
       ),
       child: Text(
@@ -185,7 +186,7 @@ class _QueueRow extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: colors.border,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl),
             ),
             child: Text(
               '$index',

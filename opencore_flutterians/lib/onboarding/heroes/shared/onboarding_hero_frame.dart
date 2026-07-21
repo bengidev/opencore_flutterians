@@ -23,7 +23,7 @@ class OnboardingHeroFrame extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl + 2),
+            borderRadius: BorderRadius.circular(OnboardingTokens.radiusControl),
             border: Border.all(color: colors.borderVisible),
           ),
           child: Padding(padding: padding, child: child),
