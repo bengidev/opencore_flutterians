@@ -181,16 +181,20 @@ class _TabBarItem extends StatelessWidget {
                 children: [
                   Icon(spec.icon, size: 22, color: color),
                   const SizedBox(height: 2),
-                  Text(
-                    spec.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                  AnimatedDefaultTextStyle(
+                    duration: duration,
+                    curve: HomeTokens.easeOut,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight:
                           active ? FontWeight.w600 : FontWeight.w500,
                       color: color,
+                    ),
+                    child: Text(
+                      spec.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],

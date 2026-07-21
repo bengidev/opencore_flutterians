@@ -32,6 +32,7 @@ class HomeModelRail extends StatelessWidget {
             child: Builder(
               builder: (chipContext) {
                 return HomePressable(
+                  semanticLabel: 'Select model',
                   onPressed: () async {
                     final choice = await showHomePopupMenu<String>(
                       context: chipContext,
@@ -40,9 +41,8 @@ class HomeModelRail extends StatelessWidget {
                           PopupMenuItem(value: title, child: Text(title)),
                       ],
                     );
-                    if (choice != null) {
-                      onModelSelected(choice);
-                    }
+                    if (!chipContext.mounted || choice == null) return;
+                    onModelSelected(choice);
                   },
                   child: _RailChip(label: modelLabel, colors: colors),
                 );
@@ -53,6 +53,7 @@ class HomeModelRail extends StatelessWidget {
         Builder(
           builder: (chipContext) {
             return HomePressable(
+              semanticLabel: 'Select speed',
               onPressed: () async {
                 final choice = await showHomePopupMenu<String>(
                   context: chipContext,
@@ -61,9 +62,8 @@ class HomeModelRail extends StatelessWidget {
                       PopupMenuItem(value: title, child: Text(title)),
                   ],
                 );
-                if (choice != null) {
-                  onSpeedSelected(choice);
-                }
+                if (!chipContext.mounted || choice == null) return;
+                onSpeedSelected(choice);
               },
               child: _RailChip(label: speedLabel, colors: colors),
             );
@@ -71,6 +71,7 @@ class HomeModelRail extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         HomePressable(
+          semanticLabel: 'Context tokens',
           onPressed: () {
             HapticFeedback.selectionClick();
             ScaffoldMessenger.of(context)

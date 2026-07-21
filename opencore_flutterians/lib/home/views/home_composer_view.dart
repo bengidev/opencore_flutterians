@@ -124,26 +124,30 @@ class _HomeComposerViewState extends State<HomeComposerView> {
             const SizedBox(height: 8),
             Row(
               children: [
-                _ComposerIconButton(
-                  tooltip: 'Add attachment',
-                  onPressed: () async {
-                    final choice = await showHomePopupMenu<String>(
-                      context: context,
-                      entries: const [
-                        PopupMenuItem(value: 'Photo', child: Text('Photo')),
-                        PopupMenuItem(value: 'File', child: Text('File')),
-                        PopupMenuItem(value: 'Camera', child: Text('Camera')),
-                      ],
+                Builder(
+                  builder: (buttonContext) {
+                    return _ComposerIconButton(
+                      tooltip: 'Add attachment',
+                      onPressed: () async {
+                        final choice = await showHomePopupMenu<String>(
+                          context: buttonContext,
+                          entries: const [
+                            PopupMenuItem(value: 'Photo', child: Text('Photo')),
+                            PopupMenuItem(value: 'File', child: Text('File')),
+                            PopupMenuItem(value: 'Camera', child: Text('Camera')),
+                          ],
+                        );
+                        if (!buttonContext.mounted || choice == null) return;
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(SnackBar(content: Text(HomeTokens.snackbarAttachment(choice))));
+                      },
+                      child: _MutedGlyph(
+                        colors: colors,
+                        icon: Icons.add_rounded,
+                      ),
                     );
-                    if (!context.mounted || choice == null) return;
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(SnackBar(content: Text(HomeTokens.snackbarAttachment(choice))));
                   },
-                  child: _MutedGlyph(
-                    colors: colors,
-                    icon: Icons.add_rounded,
-                  ),
                 ),
                 const Spacer(),
                 AnimatedSwitcher(
