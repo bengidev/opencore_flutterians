@@ -43,7 +43,7 @@ class _OnboardingBootstrapView extends StatelessWidget {
                 child: Center(child: Text('[ERROR: COULD NOT LOAD]')),
               ),
             ),
-          OnboardingBootstrapShowHome() => home,
+          OnboardingBootstrapShowHome() => Scaffold(body: home),
           OnboardingBootstrapShowOnboarding() => OnboardingEntry(store: store),
         };
       },

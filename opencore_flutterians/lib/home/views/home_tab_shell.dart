@@ -122,6 +122,12 @@ class _HomeTabShellState extends State<HomeTabShell> {
             ),
           ),
           bottomNavigationBar: AdaptiveBottomNavigationBar(
+            // Renders a real iOS 26+ UITabBar via UiKitView. Hot restart can
+            // trigger a Flutter engine regression where the native platform
+            // view is not torn down before Dart restarts, causing
+            // PlatformException(recreating_view, view id: '0'). If you hit
+            // that, stop and run again (full restart), or temporarily set
+            // useNativeBottomBar to false while iterating.
             useNativeBottomBar: true,
             selectedItemColor: colors.textPrimary,
             unselectedItemColor: colors.textSecondary,
