@@ -1,9 +1,11 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import '../home_theme.dart';
 import '../home_tokens.dart';
 import 'home_placeholder_page.dart';
-import 'home_pressable.dart';
 import 'home_view.dart';
 
 class HomeTabShell extends StatefulWidget {
@@ -16,16 +18,29 @@ class HomeTabShell extends StatefulWidget {
 class _HomeTabShellState extends State<HomeTabShell> {
   int _index = 0;
   int? _previousIndex;
-
-  static const _tabs = [
-    _TabSpec(label: 'Home', icon: Icons.home_outlined),
-    _TabSpec(label: 'Settings', icon: Icons.settings_outlined),
-    _TabSpec(label: 'About', icon: Icons.info_outline),
-  ];
+  late final List<AdaptiveNavigationDestination> _destinations = (() {
+    final apple = defaultTargetPlatform == TargetPlatform.iOS;
+    return [
+      AdaptiveNavigationDestination(
+        icon: apple ? 'house.fill' : Icons.home_outlined,
+        selectedIcon: apple ? 'house.fill' : Icons.home,
+        label: 'Home',
+      ),
+      AdaptiveNavigationDestination(
+        icon: apple ? 'gear' : Icons.settings_outlined,
+        selectedIcon: apple ? 'gear' : Icons.settings,
+        label: 'Settings',
+      ),
+      AdaptiveNavigationDestination(
+        icon: apple ? 'info.circle' : Icons.info_outline,
+        selectedIcon: apple ? 'info.circle.fill' : Icons.info,
+        label: 'About',
+      ),
+    ];
+  })();
 
   void _select(int i) {
     if (i == _index) return;
-    HapticFeedback.selectionClick();
     setState(() {
       _previousIndex = _index;
       _index = i;
@@ -40,8 +55,8 @@ class _HomeTabShellState extends State<HomeTabShell> {
   Widget _buildPages(bool reduceMotion) {
     final pages = [
       HomeView(orbActive: _index == 0),
-      const HomePlaceholderPage(title: 'Settings'),
-      const HomePlaceholderPage(title: 'About'),
+      HomePlaceholderPage(title: 'Settings'),
+      HomePlaceholderPage(title: 'About'),
     ];
 
     if (reduceMotion) {
@@ -60,9 +75,8 @@ class _HomeTabShellState extends State<HomeTabShell> {
                 opacity: i == _index ? 1 : 0,
                 duration: HomeTokens.durationTab,
                 curve: HomeTokens.easeOut,
-                onEnd: i == _previousIndex
-                    ? () => _clearPreviousIndex(i)
-                    : null,
+                onEnd:
+                    i == _previousIndex ? () => _clearPreviousIndex(i) : null,
                 child: pages[i],
               ),
             ),
@@ -76,130 +90,44 @@ class _HomeTabShellState extends State<HomeTabShell> {
     final colors = HomeColors.of(context);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    return Scaffold(
-      backgroundColor: colors.surfaceBase,
-      // Keyboard inset is applied on HomeView so the sticky tab bar stays put.
-      resizeToAvoidBottomInset: false,
-      body: _buildPages(reduceMotion),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Container(
-            key: const Key('homeStickyTabBar'),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: colors.surfaceRaised,
-              borderRadius: BorderRadius.circular(HomeTokens.radiusTabBar),
-              border: Border.all(color: colors.border),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final tabWidth = constraints.maxWidth / _tabs.length;
-                final duration =
-                    reduceMotion ? Duration.zero : HomeTokens.durationTab;
+    // iOS 26+ native UITabBar floats over content (Liquid Glass).
+    // Pad the body so the composer/footer clears the tab bar plus
+    // the home indicator safe area.
+    final bottomPad = PlatformInfo.isIOS26OrHigher()
+        ? MediaQuery.paddingOf(context).bottom + 50
+        : 0.0;
 
-                return Stack(
-                  children: [
-                    AnimatedPositioned(
-                      duration: duration,
-                      curve: HomeTokens.easeOut,
-                      left: tabWidth * _index,
-                      width: tabWidth,
-                      top: 0,
-                      bottom: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.tabActiveFill,
-                          borderRadius:
-                              BorderRadius.circular(HomeTokens.radiusTabActive),
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        for (var i = 0; i < _tabs.length; i++)
-                          _TabBarItem(
-                            spec: _tabs[i],
-                            active: _index == i,
-                            reduceMotion: reduceMotion,
-                            onTap: () => _select(i),
-                          ),
-                      ],
-                    ),
-                  ],
-                );
-              },
+    return ColoredBox(
+      color: colors.surfaceBase,
+      // The iOS 26+ native UITabBar reads its tint from
+      // CupertinoTheme.of(context).primaryColor. Without a CupertinoTheme it
+      // falls back to Material's deepPurple seed. Force the project's
+      // monochrome palette so the tab bar matches the rest of the chrome.
+      child: CupertinoTheme(
+        data: CupertinoThemeData(
+          primaryColor: colors.textPrimary,
+          brightness: Brightness.light,
+        ),
+        child: AdaptiveScaffold(
+          resizeToAvoidBottomInset: false,
+          // AdaptiveScaffold uses CupertinoPageScaffold on iOS, which lacks
+          // a Material ancestor. Wrap the body so Material widgets
+          // (TextField, IconButton, etc.) resolve correctly on every
+          // platform.
+          body: Padding(
+            padding: EdgeInsets.only(bottom: bottomPad),
+            child: Material(
+              type: MaterialType.transparency,
+              child: _buildPages(reduceMotion),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TabSpec {
-  const _TabSpec({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-}
-
-class _TabBarItem extends StatelessWidget {
-  const _TabBarItem({
-    required this.spec,
-    required this.active,
-    required this.reduceMotion,
-    required this.onTap,
-  });
-
-  final _TabSpec spec;
-  final bool active;
-  final bool reduceMotion;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = HomeColors.of(context);
-    final duration =
-        reduceMotion ? Duration.zero : HomeTokens.durationTab;
-
-    return Expanded(
-      child: HomePressable(
-        onPressed: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: TweenAnimationBuilder<Color?>(
-            duration: duration,
-            curve: HomeTokens.easeOut,
-            tween: ColorTween(
-              end: active ? colors.textPrimary : colors.textSecondary,
-            ),
-            builder: (context, color, child) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(spec.icon, size: 22, color: color),
-                  const SizedBox(height: 2),
-                  AnimatedDefaultTextStyle(
-                    duration: duration,
-                    curve: HomeTokens.easeOut,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight:
-                          active ? FontWeight.w600 : FontWeight.w500,
-                      color: color,
-                    ),
-                    child: Text(
-                      spec.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              );
-            },
+          bottomNavigationBar: AdaptiveBottomNavigationBar(
+            useNativeBottomBar: true,
+            selectedItemColor: colors.textPrimary,
+            unselectedItemColor: colors.textSecondary,
+            items: _destinations,
+            selectedIndex: _index,
+            onTap: _select,
           ),
         ),
       ),
