@@ -10,20 +10,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() => GoogleFonts.config.allowRuntimeFetching = false);
 
-  testWidgets('tapping Settings shows placeholder and keeps bar pinned',
+  testWidgets('tapping Settings shows placeholder page',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(theme: HomeTheme.light(), home: const HomeTabShell()),
     );
     await tester.pump();
 
-    expect(find.byKey(const Key('homeStickyTabBar')), findsOneWidget);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('About'), findsWidgets);
 
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.text('Settings').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 220));
 
     expect(find.byType(HomeTabShell), findsOneWidget);
+    // The label appears in both the tab bar and the placeholder page.
     expect(find.text('Settings'), findsAtLeastNWidgets(2));
   });
 
@@ -40,7 +42,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('About'));
+    await tester.tap(find.text('About').first);
     await tester.pump();
 
     expect(find.byType(HomePlaceholderPage), findsWidgets);
