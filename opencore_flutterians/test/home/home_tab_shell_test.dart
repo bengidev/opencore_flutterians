@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -61,5 +62,45 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(HomeView), findsOneWidget);
+  });
+
+  testWidgets('Android tab bar uses monochrome home palette', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    await tester.pumpWidget(
+      MaterialApp(theme: HomeTheme.light(), home: const HomeTabShell()),
+    );
+    await tester.pump();
+
+    final navigationBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    const colors = HomeColors.light;
+
+    expect(navigationBar.backgroundColor, colors.surfaceRaised);
+    expect(navigationBar.indicatorColor, colors.tabActiveFill);
+    expect(navigationBar.destinations, hasLength(3));
+
+    final homeDestination = navigationBar.destinations[0] as NavigationDestination;
+    final homeSelectedIcon = homeDestination.selectedIcon as Icon;
+    final homeIcon = homeDestination.icon as Icon;
+    expect(homeSelectedIcon.color, colors.textPrimary);
+    expect(homeIcon.color, colors.textSecondary);
+
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('iOS tab shell builds without casting errors', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    await tester.pumpWidget(
+      MaterialApp(theme: HomeTheme.light(), home: const HomeTabShell()),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(HomeTabShell), findsOneWidget);
+
+    debugDefaultTargetPlatformOverride = null;
   });
 }

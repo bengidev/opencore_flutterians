@@ -89,10 +89,60 @@ class _HomeTabShellState extends State<HomeTabShell> {
     );
   }
 
+  /// Builds the Android [NavigationBar] with the exact monochrome home palette.
+  ///
+  /// The package forwards [AdaptiveBottomNavigationBar.selectedItemColor] only
+  /// as [NavigationBar.indicatorColor], which would make the active indicator
+  /// background black. Providing a custom bar lets us keep the indicator
+  /// background as [HomeColors.tabActiveFill] and the selected icon as
+  /// [HomeColors.textPrimary].
+  ///
+  /// [destinations] must use [IconData] icons; the adaptive destination API
+  /// accepts dynamic icon types, but Material [NavigationDestination] requires
+  /// [IconData].
+  Widget _androidBottomNavigationBar(
+    BuildContext context,
+    List<AdaptiveNavigationDestination> destinations,
+  ) {
+    final colors = HomeColors.of(context);
+
+    return NavigationBar(
+      backgroundColor: colors.surfaceRaised,
+      indicatorColor: colors.tabActiveFill,
+      indicatorShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(HomeTokens.radiusTabBar),
+      ),
+      selectedIndex: _index,
+      onDestinationSelected: _select,
+      destinations:
+          destinations.map((dest) {
+            final icon = dest.icon;
+            final selectedIcon = dest.selectedIcon ?? icon;
+            assert(
+              icon is IconData,
+              'Android navigation destinations must use IconData icons, '
+              'got ${icon.runtimeType} for "${dest.label}".',
+            );
+            assert(
+              selectedIcon is IconData,
+              'Android navigation selected icons must use IconData icons, '
+              'got ${selectedIcon.runtimeType} for "${dest.label}".',
+            );
+            return NavigationDestination(
+              icon: Icon(icon as IconData, color: colors.textSecondary),
+              selectedIcon: Icon(selectedIcon as IconData, color: colors.textPrimary),
+              label: dest.label,
+            );
+          }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final destinations = _destinations(context);
+    final platform = Theme.of(context).platform;
 
     // iOS 26+ native UITabBar floats over content (Liquid Glass). Pad the
     // body so the composer/footer clears the tab bar plus the home indicator
@@ -136,7 +186,16 @@ class _HomeTabShellState extends State<HomeTabShell> {
             useNativeBottomBar: true,
             selectedItemColor: colors.textPrimary,
             unselectedItemColor: colors.textSecondary,
-            items: _destinations(context),
+            // Android: use a custom NavigationBar so the active indicator
+            // background stays tabActiveFill instead of becoming textPrimary.
+            // The package ignores this on iOS, but the argument is still
+            // evaluated, so only build the custom bar on Android to avoid
+            // casting SF Symbol strings.
+            bottomNavigationBar:
+                platform == TargetPlatform.android
+                    ? _androidBottomNavigationBar(context, destinations)
+                    : null,
+            items: destinations,
             selectedIndex: _index,
             onTap: _select,
           ),
