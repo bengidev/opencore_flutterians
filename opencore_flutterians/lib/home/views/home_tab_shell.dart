@@ -89,6 +89,38 @@ class _HomeTabShellState extends State<HomeTabShell> {
     );
   }
 
+  /// Builds the Android [NavigationBar] with the exact monochrome home palette.
+  ///
+  /// The package forwards [AdaptiveBottomNavigationBar.selectedItemColor] only
+  /// as [NavigationBar.indicatorColor], which would make the active indicator
+  /// background black. Providing a custom bar lets us keep the indicator
+  /// background as [HomeColors.tabActiveFill] and the selected icon as
+  /// [HomeColors.textPrimary]. This widget is ignored on iOS.
+  Widget _androidBottomNavigationBar(BuildContext context) {
+    final colors = HomeColors.of(context);
+    final destinations = _destinations(context);
+
+    return NavigationBar(
+      backgroundColor: colors.surfaceRaised,
+      indicatorColor: colors.tabActiveFill,
+      indicatorShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(HomeTokens.radiusTabBar),
+      ),
+      selectedIndex: _index,
+      onDestinationSelected: _select,
+      destinations:
+          destinations.map((dest) {
+            final icon = dest.icon as IconData;
+            final selectedIcon = dest.selectedIcon as IconData? ?? icon;
+            return NavigationDestination(
+              icon: Icon(icon, color: colors.textSecondary),
+              selectedIcon: Icon(selectedIcon, color: colors.textPrimary),
+              label: dest.label,
+            );
+          }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
@@ -136,6 +168,14 @@ class _HomeTabShellState extends State<HomeTabShell> {
             useNativeBottomBar: true,
             selectedItemColor: colors.textPrimary,
             unselectedItemColor: colors.textSecondary,
+            // Android: use a custom NavigationBar so the active indicator
+            // background stays tabActiveFill instead of becoming textPrimary.
+            // The package ignores this on iOS, but it is still evaluated, so
+            // only build it on Android to avoid casting SF Symbol strings.
+            bottomNavigationBar:
+                Theme.of(context).platform == TargetPlatform.iOS
+                    ? null
+                    : _androidBottomNavigationBar(context),
             items: _destinations(context),
             selectedIndex: _index,
             onTap: _select,
