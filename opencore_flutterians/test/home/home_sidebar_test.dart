@@ -58,6 +58,42 @@ void main() {
     expect(find.text('Chats'), findsNothing);
   });
 
+  testWidgets('tapping drawer panel does not close the sidebar', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HomeTheme.light(),
+        home: const Scaffold(body: SizedBox.expand()),
+      ),
+    );
+
+    HomeSidebar.open(tester.element(find.byType(Scaffold)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Chats'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chats'), findsOneWidget);
+  });
+
+  testWidgets('swiping left closes the sidebar', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: HomeTheme.light(),
+        home: const Scaffold(body: SizedBox.expand()),
+      ),
+    );
+
+    HomeSidebar.open(tester.element(find.byType(Scaffold)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chats'), findsOneWidget);
+
+    await tester.drag(find.text('Chats'), const Offset(-50, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chats'), findsNothing);
+  });
+
   testWidgets('selecting a chat invokes callback and closes', (tester) async {
     String? selected;
 

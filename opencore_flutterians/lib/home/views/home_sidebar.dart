@@ -47,6 +47,7 @@ class _HomeSidebarState extends State<HomeSidebar>
   late final Animation<Offset> _slide;
   late final Animation<double> _scrim;
   var _opened = false;
+  var _isClosing = false;
 
   @override
   void initState() {
@@ -82,11 +83,13 @@ class _HomeSidebarState extends State<HomeSidebar>
   }
 
   Future<void> _close() async {
+    if (_isClosing) return;
+    _isClosing = true;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     await _controller.animateBack(
       0,
       duration: reduceMotion ? Duration.zero : HomeTokens.durationUi,
-      curve: HomeTokens.easeInOut,
+      curve: HomeTokens.easeOut,
     );
     if (mounted) Navigator.of(context).pop();
   }
@@ -109,28 +112,36 @@ class _HomeSidebarState extends State<HomeSidebar>
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _close();
       },
-      child: GestureDetector(
-        onTap: _close,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedBuilder(
-          animation: _scrim,
-          builder: (context, child) {
-            return ColoredBox(
-              color: colors.textPrimary.withValues(
-                alpha: _scrimOpacity * _scrim.value,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _close,
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedBuilder(
+                animation: _scrim,
+                builder: (context, _) {
+                  return ColoredBox(
+                    color: colors.textPrimary.withValues(
+                      alpha: _scrimOpacity * _scrim.value,
+                    ),
+                  );
+                },
               ),
-              child: child,
-            );
-          },
-          child: Align(
+            ),
+          ),
+          Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onHorizontalDragUpdate: (details) {
-                if (details.primaryDelta != null && details.primaryDelta! < -8) {
+                if (details.primaryDelta != null &&
+                    details.primaryDelta! < -8) {
                   _close();
                 }
               },
-              behavior: HitTestBehavior.translucent,
+              // Absorb taps on the panel so they don't hit the scrim.
+              onTap: () {},
+              behavior: HitTestBehavior.opaque,
               child: SlideTransition(
                 position: _slide,
                 child: SizedBox(
@@ -158,7 +169,8 @@ class _HomeSidebarState extends State<HomeSidebar>
                               physics: const ClampingScrollPhysics(),
                               itemCount: HomeTokens.stubChatTitles.length,
                               itemBuilder: (context, index) {
-                                final title = HomeTokens.stubChatTitles[index];
+                                final title =
+                                    HomeTokens.stubChatTitles[index];
                                 return _ChatRow(
                                   title: title,
                                   onTap: () => _select(title),
@@ -166,6 +178,9 @@ class _HomeSidebarState extends State<HomeSidebar>
                                 );
                               },
                             ),
+                          ),
+                          SizedBox(
+                            height: MediaQuery.paddingOf(context).bottom,
                           ),
                         ],
                       ),
@@ -175,7 +190,7 @@ class _HomeSidebarState extends State<HomeSidebar>
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -239,13 +254,17 @@ class _ChatRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = HomeColors.of(context);
-    final duration = reduceMotion ? Duration.zero : HomeTokens.durationPress;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: HomePressable.builder(
         onPressed: onTap,
         builder: (context, pressed, child) {
+          final duration = reduceMotion
+              ? Duration.zero
+              : (pressed
+                  ? HomeTokens.durationPress
+                  : HomeTokens.durationRelease);
           return AnimatedContainer(
             duration: duration,
             curve: HomeTokens.easeOut,
@@ -271,7 +290,7 @@ class _ChatRow extends StatelessWidget {
                 color: colors.textSecondary,
               ),
               const SizedBox(width: 12),
-                Expanded(
+              Expanded(
                 child: Text(
                   title,
                   maxLines: 1,
