@@ -66,6 +66,7 @@ void main() {
 
   testWidgets('Android tab bar uses monochrome home palette', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
     await tester.pumpWidget(
       MaterialApp(theme: HomeTheme.light(), home: const HomeTabShell()),
@@ -90,6 +91,7 @@ void main() {
 
   testWidgets('iOS tab shell builds without casting errors', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
     await tester.pumpWidget(
       MaterialApp(theme: HomeTheme.light(), home: const HomeTabShell()),
