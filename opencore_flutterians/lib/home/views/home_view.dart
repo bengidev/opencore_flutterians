@@ -5,8 +5,8 @@ import '../home_theme.dart';
 import '../home_tokens.dart';
 import 'home_composer_view.dart';
 import 'home_model_rail.dart';
-import 'home_popup_menu.dart';
 import 'home_pressable.dart';
+import 'home_sidebar.dart';
 import 'home_welcome_view.dart';
 
 class HomeView extends StatefulWidget {
@@ -46,30 +46,22 @@ class _HomeViewState extends State<HomeView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Builder(
-                    builder: (menuContext) {
-                      return HomePressable(
-                        key: const Key('homeMenuButton'),
-                        onPressed: () async {
-                          final choice = await showHomePopupMenu<String>(
-                            context: menuContext,
-                            entries: [
-                              for (final title in HomeTokens.stubChatTitles)
-                                PopupMenuItem(
-                                  value: title,
-                                  child: Text(title),
-                                ),
-                            ],
-                          );
-                          if (choice == null) return;
-                          HapticFeedback.lightImpact();
+                  HomePressable(
+                    key: const Key('homeMenuButton'),
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      await HomeSidebar.open(
+                        context,
+                        onChatSelected: (title) {
+                          // TODO: wire chat selection to real navigation/state.
+                          debugPrint('Selected chat: $title');
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Icon(Icons.menu, color: colors.textPrimary),
-                        ),
                       );
                     },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(Icons.menu, color: colors.textPrimary),
+                    ),
                   ),
                   HomePressable(
                     key: const Key('homeNewChatButton'),

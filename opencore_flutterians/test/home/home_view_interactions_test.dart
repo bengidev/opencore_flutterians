@@ -27,7 +27,7 @@ void main() {
     expect(find.text(HomeTokens.snackbarNewChat), findsOneWidget);
   });
 
-  testWidgets('menu shows stub chat titles', (tester) async {
+  testWidgets('menu button opens sidebar with stub chat titles', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: HomeTheme.light(),
@@ -39,6 +39,7 @@ void main() {
     await tester.tap(find.byKey(const Key('homeMenuButton')));
     await tester.pumpAndSettle();
 
+    expect(find.text('Chats'), findsOneWidget);
     for (final title in HomeTokens.stubChatTitles) {
       expect(find.text(title), findsOneWidget);
     }
