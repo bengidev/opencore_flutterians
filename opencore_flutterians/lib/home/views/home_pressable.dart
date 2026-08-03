@@ -10,6 +10,21 @@ class HomePressable extends StatefulWidget {
     super.key,
     required this.onPressed,
     required this.child,
+    this.builder,
+    this.tooltip,
+    this.semanticLabel,
+    this.enableHaptics = false,
+  });
+
+  /// Creates a pressable whose visual feedback is fully controlled by [builder].
+  ///
+  /// The builder receives the current pressed state so callers can animate
+  /// additional properties (e.g. background color) beyond the default scale.
+  const HomePressable.builder({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    required this.builder,
     this.tooltip,
     this.semanticLabel,
     this.enableHaptics = false,
@@ -17,6 +32,7 @@ class HomePressable extends StatefulWidget {
 
   final VoidCallback? onPressed;
   final Widget child;
+  final Widget Function(BuildContext context, bool pressed, Widget child)? builder;
   final String? tooltip;
   final String? semanticLabel;
   final bool enableHaptics;
@@ -61,12 +77,13 @@ class _HomePressableState extends State<HomePressable> {
         onTapCancel: _enabled ? () => _setPressed(false) : null,
         onTapUp: _enabled ? (_) => _setPressed(false) : null,
         onTap: _enabled ? _handleTap : null,
-        child: AnimatedScale(
-          scale: _pressed ? HomeTokens.pressScale : 1,
-          duration: duration,
-          curve: HomeTokens.easeOut,
-          child: widget.child,
-        ),
+        child: widget.builder?.call(context, _pressed, widget.child) ??
+            AnimatedScale(
+              scale: _pressed ? HomeTokens.pressScale : 1,
+              duration: duration,
+              curve: HomeTokens.easeOut,
+              child: widget.child,
+            ),
       ),
     );
 
