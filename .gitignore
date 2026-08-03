@@ -110,3 +110,9 @@ migrate_working_dir/
 !.env.example
 *.pem
 secrets/
+
+# DevTools extensions config — local developer settings
+devtools_options.yaml
+
+# Design docs and specs — local workspace
+docs/superpowers/

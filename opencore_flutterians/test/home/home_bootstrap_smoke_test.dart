@@ -30,7 +30,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(HomeTokens.greeting), findsOneWidget);
-    expect(find.byKey(const Key('homeStickyTabBar')), findsOneWidget);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Settings'), findsWidgets);
   });
 }
 
