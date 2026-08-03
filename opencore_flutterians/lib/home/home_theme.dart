@@ -89,11 +89,34 @@ class HomeColors extends ThemeExtension<HomeColors> {
 
 class HomeTheme {
   static ThemeData light() {
+    const colors = HomeColors.light;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: HomeColors.light.surfaceBase,
-      extensions: const [HomeColors.light],
+      scaffoldBackgroundColor: colors.surfaceBase,
+      // Explicit monochrome ColorScheme so Material widgets (NavigationBar,
+      // buttons, etc.) use the home palette instead of Flutter's default
+      // deep-purple seed.
+      colorScheme: ColorScheme(
+        brightness: Brightness.light,
+        primary: colors.textPrimary,
+        onPrimary: colors.surfaceBase,
+        secondary: colors.textSecondary,
+        onSecondary: colors.surfaceBase,
+        secondaryContainer: colors.tabActiveFill,
+        onSecondaryContainer: colors.textPrimary,
+        tertiary: colors.textTertiary,
+        onTertiary: colors.surfaceBase,
+        surface: colors.surfaceBase,
+        onSurface: colors.textPrimary,
+        surfaceContainer: colors.surfaceRaised,
+        surfaceContainerHighest: colors.surfaceMuted,
+        onSurfaceVariant: colors.textSecondary,
+        outline: colors.border,
+        error: Colors.red,
+        onError: Colors.white,
+      ),
+      extensions: const [colors],
     );
   }
 }
