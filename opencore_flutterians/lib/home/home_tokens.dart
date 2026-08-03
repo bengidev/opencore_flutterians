@@ -27,6 +27,14 @@ class HomeTokens {
 
   static const pressScale = 0.97;
 
+  /// Estimated extra inset for the iOS 26+ floating UITabBar rendered via
+  /// [AdaptiveBottomNavigationBar]. The package does not expose the native
+  /// tab-bar height, so this is a conservative approximation of the standard
+  /// iOS 26 UITabBar height. See discussion in home_tab_shell.dart.
+  // TODO: Replace with the actual native tab-bar inset once adaptive_platform_ui
+  // exposes it, or derive it from MediaQuery if Flutter adds UITabBar insets.
+  static const nativeTabBarInset = 50.0;
+
   static const greeting = 'Hi! How can I help you?';
   static const encryptionLine1 = 'Chats are end-to-end encrypted.';
   static const encryptionLine2 = 'Your data is safe.';

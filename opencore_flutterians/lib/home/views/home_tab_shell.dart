@@ -1,7 +1,7 @@
 import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../home_theme.dart';
 import '../home_tokens.dart';
@@ -18,8 +18,11 @@ class HomeTabShell extends StatefulWidget {
 class _HomeTabShellState extends State<HomeTabShell> {
   int _index = 0;
   int? _previousIndex;
-  late final List<AdaptiveNavigationDestination> _destinations = (() {
-    final apple = defaultTargetPlatform == TargetPlatform.iOS;
+
+  List<AdaptiveNavigationDestination> _destinations(BuildContext context) {
+    // Compute at build time so ThemeData.platform overrides (e.g. in tests or
+    // tablet/desktop builds) are respected instead of caching at initState.
+    final apple = Theme.of(context).platform == TargetPlatform.iOS;
     return [
       AdaptiveNavigationDestination(
         icon: apple ? 'house.fill' : Icons.home_outlined,
@@ -37,10 +40,11 @@ class _HomeTabShellState extends State<HomeTabShell> {
         label: 'About',
       ),
     ];
-  })();
+  }
 
   void _select(int i) {
     if (i == _index) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _previousIndex = _index;
       _index = i;
@@ -90,11 +94,12 @@ class _HomeTabShellState extends State<HomeTabShell> {
     final colors = HomeColors.of(context);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
-    // iOS 26+ native UITabBar floats over content (Liquid Glass).
-    // Pad the body so the composer/footer clears the tab bar plus
-    // the home indicator safe area.
+    // iOS 26+ native UITabBar floats over content (Liquid Glass). Pad the
+    // body so the composer/footer clears the tab bar plus the home indicator
+    // safe area. The package does not expose the native tab-bar height, so we
+    // add a conservative estimated inset on top of the safe-area padding.
     final bottomPad = PlatformInfo.isIOS26OrHigher()
-        ? MediaQuery.paddingOf(context).bottom + 50
+        ? MediaQuery.paddingOf(context).bottom + HomeTokens.nativeTabBarInset
         : 0.0;
 
     return ColoredBox(
@@ -106,7 +111,7 @@ class _HomeTabShellState extends State<HomeTabShell> {
       child: CupertinoTheme(
         data: CupertinoThemeData(
           primaryColor: colors.textPrimary,
-          brightness: Brightness.light,
+          brightness: Theme.of(context).brightness,
         ),
         child: AdaptiveScaffold(
           resizeToAvoidBottomInset: false,
@@ -131,7 +136,7 @@ class _HomeTabShellState extends State<HomeTabShell> {
             useNativeBottomBar: true,
             selectedItemColor: colors.textPrimary,
             unselectedItemColor: colors.textSecondary,
-            items: _destinations,
+            items: _destinations(context),
             selectedIndex: _index,
             onTap: _select,
           ),
